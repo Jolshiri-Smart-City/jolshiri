@@ -6,13 +6,14 @@ import { PropertyCard } from "@/components/PropertyCard";
 import { featuredProperties } from "@/lib/properties.functions";
 import { useI18n } from "@/lib/i18n";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import heroJolshiri from "@/assets/hero-jolshiri.jpg";
 
 const featuredOptions = queryOptions({
   queryKey: ["featured"],
   queryFn: () => featuredProperties(),
 });
 
-const DEFAULT_HERO_IMG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80";
+const DEFAULT_HERO_IMG = heroJolshiri;
 
 export const Route = createFileRoute("/")({
   head: () => ({
