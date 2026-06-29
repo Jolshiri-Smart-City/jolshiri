@@ -233,6 +233,25 @@ function PropertyDetailPage() {
           <LeadForm propertyId={data.id} />
         </aside>
       </div>
+
+      {(similarQ.data ?? []).length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-display text-xl font-semibold sm:text-2xl">Similar properties in {data.project.sector}</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(similarQ.data ?? []).slice(0, 3).map((p) => (
+              <PropertyCard key={p.id} property={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        index={activeImage}
+        on={{ view: ({ index }) => setActiveImage(index) }}
+        slides={photos.map((p) => ({ src: p.url }))}
+      />
       <WhatsAppFab
         phone={waPhone}
         message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
