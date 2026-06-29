@@ -286,21 +286,22 @@ function PropertyDetailPage() {
       )}
 
       <PropertyFAQ
-        faqs={[
-          ...(() => {
-            const raw = (settings as { faqs?: { items?: Array<{ q: string; a: string }> } | Array<{ q: string; a: string }> } | undefined)?.faqs;
-            const items = Array.isArray(raw) ? raw : raw?.items;
-            return (items ?? []).filter((f) => f.q && f.a);
-          })(),
-          ...buildPropertyFaqs({
+        faqs={(() => {
+          const raw = (settings as { faqs?: { items?: Array<{ q: string; a: string }>; auto_disabled?: boolean } | Array<{ q: string; a: string }> } | undefined)?.faqs;
+          const items = Array.isArray(raw) ? raw : raw?.items;
+          const autoDisabled = !Array.isArray(raw) && !!raw?.auto_disabled;
+          const custom = (items ?? []).filter((f) => f.q && f.a);
+          const auto = autoDisabled ? [] : buildPropertyFaqs({
             unit: data.unit_number,
             project: data.project.name,
             possession: data.possession_date,
             bookingMoney: data.booking_money ? Number(data.booking_money) : null,
             ready: !!data.is_ready_to_move,
-          }),
-        ]}
+          });
+          return [...custom, ...auto];
+        })()}
       />
+
 
 
       {/* Spacer so sticky mobile bar doesn't cover content */}
