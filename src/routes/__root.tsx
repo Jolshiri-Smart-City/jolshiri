@@ -116,8 +116,8 @@ function RootComponent() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Jolshiri Smart City · Purbachal, Dhaka
+          <footer>
+            <Footer />
           </footer>
         </div>
         <Toaster richColors position="top-right" />
