@@ -126,15 +126,29 @@ function PropertyDetailPage() {
             <div className="text-xs text-muted-foreground">৳{Math.round(Number(data.price_per_sqft)).toLocaleString()} / {t("sqft")}</div>
           ) : null}
           <StatusBadge status={data.status} />
+          <Button
+            type="button"
+            variant={isCompared ? "default" : "outline"}
+            size="sm"
+            className="mt-2"
+            onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
+          >
+            {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
+            {isCompared ? "In compare" : "Compare"}
+          </Button>
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div>
           {cover ? (
-            <div className="overflow-hidden rounded-xl border border-border/70 bg-muted">
-              <img src={cover.url} alt="" className="aspect-[4/3] w-full object-cover" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="block w-full overflow-hidden rounded-xl border border-border/70 bg-muted"
+            >
+              <img src={cover.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform hover:scale-[1.01]" />
+            </button>
           ) : null}
           {photos.length > 1 ? (
             <div className="mt-3 grid grid-cols-5 gap-2">
