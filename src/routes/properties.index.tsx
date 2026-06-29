@@ -39,7 +39,7 @@ function parseNumber(v: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export const Route = createFileRoute("/properties")({
+export const Route = createFileRoute("/properties/")({
   head: () => ({
     meta: [
       { title: "Browse properties — Jolshiri Smart City" },
