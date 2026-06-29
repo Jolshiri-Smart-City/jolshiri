@@ -146,6 +146,45 @@ export type Database = {
           },
         ]
       }
+      lead_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_status_history: {
         Row: {
           changed_at: string
@@ -191,8 +230,10 @@ export type Database = {
       leads: {
         Row: {
           assigned_agent_id: string | null
+          assigned_to: string | null
           created_at: string
           email: string | null
+          follow_up_at: string | null
           full_name: string
           id: string
           message: string | null
@@ -207,8 +248,10 @@ export type Database = {
         }
         Insert: {
           assigned_agent_id?: string | null
+          assigned_to?: string | null
           created_at?: string
           email?: string | null
+          follow_up_at?: string | null
           full_name: string
           id?: string
           message?: string | null
@@ -223,8 +266,10 @@ export type Database = {
         }
         Update: {
           assigned_agent_id?: string | null
+          assigned_to?: string | null
           created_at?: string
           email?: string | null
+          follow_up_at?: string | null
           full_name?: string
           id?: string
           message?: string | null
@@ -241,6 +286,13 @@ export type Database = {
           {
             foreignKeyName: "leads_assigned_agent_id_fkey"
             columns: ["assigned_agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
