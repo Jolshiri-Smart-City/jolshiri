@@ -1150,6 +1150,7 @@ function SettingsAdmin() {
       await updateSiteSetting({ data: { key: "why", value: why } });
       await updateSiteSetting({ data: { key: "testimonials", value: { items: testimonials } as never } });
       await updateSiteSetting({ data: { key: "seo", value: seo } });
+      await updateSiteSetting({ data: { key: "footer", value: footer } });
     },
     onSuccess: () => {
       toast.success("Site settings saved");
