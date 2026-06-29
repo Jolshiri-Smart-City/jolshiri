@@ -4,11 +4,11 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 
 export function Footer() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const { data: settings } = useSiteSettings();
   const brand = settings?.brand;
-  const brandName = brand ? (lang === "bn" ? brand.name_bn : brand.name_en) : t("brand");
-  const address = brand ? (lang === "bn" ? brand.address_bn : brand.address_en) : "Purbachal, Dhaka";
+  const brandName = brand?.name_en || t("brand");
+  const address = brand?.address_en || "Purbachal, Dhaka";
 
   const socials: Array<{ href?: string; Icon: typeof Facebook; label: string }> = [
     { href: brand?.facebook, Icon: Facebook, label: "Facebook" },
