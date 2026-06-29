@@ -314,18 +314,31 @@ function ListingDialog({
 
   const mut = useMutation({
     mutationFn: async () => {
+      const numOrNull = (v: unknown) => (v === "" || v === undefined || v === null ? null : Number(v));
       const payload = {
         project_id: form.project_id!,
         unit_number: form.unit_number!,
         size_sqft: Number(form.size_sqft) || 0,
         bedrooms: Number(form.bedrooms) || 0,
-        bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
+        bathrooms: numOrNull(form.bathrooms),
         price_total: Number(form.price_total) || 0,
-        price_per_sqft: form.price_per_sqft ? Number(form.price_per_sqft) : null,
+        price_per_sqft: numOrNull(form.price_per_sqft),
+        booking_money: numOrNull(form.booking_money),
         status: (form.status ?? "available") as PropertyStatus,
         possession_date: form.possession_date || null,
-        floor_number: form.floor_number ? Number(form.floor_number) : null,
+        floor_number: numOrNull(form.floor_number),
+        total_floors: numOrNull(form.total_floors),
         description: form.description || null,
+        facing: form.facing || null,
+        has_balcony: !!form.has_balcony,
+        is_negotiable: !!form.is_negotiable,
+        is_ready_to_move: !!form.is_ready_to_move,
+        construction_stage: form.construction_stage || null,
+        plot_road_number: form.plot_road_number || null,
+        registration_type: form.registration_type || null,
+        ownership_docs_available: !!form.ownership_docs_available,
+        lat: numOrNull(form.lat),
+        lng: numOrNull(form.lng),
       };
       if (isEdit) {
         const { error } = await supabase.from("properties").update(payload).eq("id", row!.id);
@@ -343,14 +356,17 @@ function ListingDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const set = <K extends keyof AdminRow>(k: K, v: AdminRow[K] | string | boolean | number | null) =>
+    setForm((f) => ({ ...f, [k]: v as never }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit listing" : "New listing"}</DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-3"
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             if (!form.project_id || !form.unit_number) {
@@ -360,41 +376,75 @@ function ListingDialog({
             mut.mutate();
           }}
         >
-          <div>
-            <Label>Project</Label>
-            <Select value={form.project_id ?? ""} onValueChange={(v) => setForm((f) => ({ ...f, project_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
-              <SelectContent>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} · {p.sector}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Label>Project</Label>
+              <Select value={form.project_id ?? ""} onValueChange={(v) => set("project_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} · {p.sector}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Unit #</Label><Input value={form.unit_number ?? ""} onChange={(e) => set("unit_number", e.target.value)} required /></div>
+            <div>
+              <Label>Status</Label>
+              <Select value={form.status ?? "available"} onValueChange={(v) => set("status", v as PropertyStatus)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="sold">Sold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Floor</Label><Input type="number" value={form.floor_number ?? ""} onChange={(e) => set("floor_number", Number(e.target.value))} /></div>
+            <div><Label>Total floors</Label><Input type="number" value={form.total_floors ?? ""} onChange={(e) => set("total_floors", Number(e.target.value))} /></div>
+            <div><Label>Bedrooms</Label><Input type="number" value={form.bedrooms ?? ""} onChange={(e) => set("bedrooms", Number(e.target.value))} required /></div>
+            <div><Label>Bathrooms</Label><Input type="number" value={form.bathrooms ?? ""} onChange={(e) => set("bathrooms", Number(e.target.value))} /></div>
+            <div><Label>Size (sqft)</Label><Input type="number" value={form.size_sqft ?? ""} onChange={(e) => set("size_sqft", Number(e.target.value))} required /></div>
+            <div>
+              <Label>Facing</Label>
+              <Select value={form.facing ?? ""} onValueChange={(v) => set("facing", v)}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {["north","south","east","west","north_east","north_west","south_east","south_west"].map((f) => (
+                    <SelectItem key={f} value={f}>{f.replace("_","-")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Price (BDT)</Label><Input type="number" value={form.price_total ?? ""} onChange={(e) => set("price_total", Number(e.target.value))} required /></div>
+            <div><Label>Price/sqft</Label><Input type="number" value={form.price_per_sqft ?? ""} onChange={(e) => set("price_per_sqft", Number(e.target.value))} /></div>
+            <div><Label>Booking money</Label><Input type="number" value={form.booking_money ?? ""} onChange={(e) => set("booking_money", Number(e.target.value))} /></div>
+            <div><Label>Possession date</Label><Input type="date" value={form.possession_date ?? ""} onChange={(e) => set("possession_date", e.target.value)} /></div>
+            <div>
+              <Label>Construction stage</Label>
+              <Select value={form.construction_stage ?? ""} onValueChange={(v) => set("construction_stage", v)}>
+                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {["planning","foundation","structure","finishing","ready"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Plot / Road #</Label><Input value={form.plot_road_number ?? ""} onChange={(e) => set("plot_road_number", e.target.value)} /></div>
+            <div><Label>Registration type</Label><Input value={form.registration_type ?? ""} onChange={(e) => set("registration_type", e.target.value)} /></div>
+            <div><Label>Latitude</Label><Input type="number" step="0.000001" value={form.lat ?? ""} onChange={(e) => set("lat", Number(e.target.value))} /></div>
+            <div><Label>Longitude</Label><Input type="number" step="0.000001" value={form.lng ?? ""} onChange={(e) => set("lng", Number(e.target.value))} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><Label>Unit #</Label><Input value={form.unit_number ?? ""} onChange={(e) => setForm((f) => ({ ...f, unit_number: e.target.value }))} required /></div>
-            <div><Label>Floor</Label><Input type="number" value={form.floor_number ?? ""} onChange={(e) => setForm((f) => ({ ...f, floor_number: Number(e.target.value) }))} /></div>
-            <div><Label>Bedrooms</Label><Input type="number" value={form.bedrooms ?? ""} onChange={(e) => setForm((f) => ({ ...f, bedrooms: Number(e.target.value) }))} required /></div>
-            <div><Label>Bathrooms</Label><Input type="number" value={form.bathrooms ?? ""} onChange={(e) => setForm((f) => ({ ...f, bathrooms: Number(e.target.value) }))} /></div>
-            <div><Label>Size (sqft)</Label><Input type="number" value={form.size_sqft ?? ""} onChange={(e) => setForm((f) => ({ ...f, size_sqft: Number(e.target.value) }))} required /></div>
-            <div><Label>Price (BDT)</Label><Input type="number" value={form.price_total ?? ""} onChange={(e) => setForm((f) => ({ ...f, price_total: Number(e.target.value) }))} required /></div>
-            <div><Label>Price/sqft</Label><Input type="number" value={form.price_per_sqft ?? ""} onChange={(e) => setForm((f) => ({ ...f, price_per_sqft: Number(e.target.value) }))} /></div>
-            <div><Label>Possession date</Label><Input type="date" value={form.possession_date ?? ""} onChange={(e) => setForm((f) => ({ ...f, possession_date: e.target.value }))} /></div>
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={form.status ?? "available"} onValueChange={(v) => setForm((f) => ({ ...f, status: v as PropertyStatus }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="booked">Booked</SelectItem>
-                <SelectItem value="sold">Sold</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap gap-4 rounded-md border border-border/60 p-3 text-sm">
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.has_balcony} onChange={(e) => set("has_balcony", e.target.checked)} /> Balcony</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.is_negotiable} onChange={(e) => set("is_negotiable", e.target.checked)} /> Negotiable</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.is_ready_to_move} onChange={(e) => set("is_ready_to_move", e.target.checked)} /> Ready to move</label>
+            <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.ownership_docs_available} onChange={(e) => set("ownership_docs_available", e.target.checked)} /> Ownership docs</label>
           </div>
           <div>
             <Label>Description</Label>
-            <Textarea rows={3} value={form.description ?? ""} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+            <Textarea rows={4} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -405,6 +455,7 @@ function ListingDialog({
     </Dialog>
   );
 }
+
 
 function LeadsAdmin() {
   const q = useQuery({
