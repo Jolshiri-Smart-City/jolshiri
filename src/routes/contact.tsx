@@ -18,17 +18,21 @@ export const Route = createFileRoute("/contact")({
 });
 
 function ContactPage() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const { data: settings } = useSiteSettings();
   const brand = settings?.brand;
-  const address = brand ? (lang === "bn" ? brand.address_bn : brand.address_en) : "Purbachal, Dhaka";
+  const contact = settings?.contact;
+  const address = brand?.address_en || "Purbachal, Dhaka";
   const [open, setOpen] = useState(false);
   const wa = brand?.whatsapp?.replace(/[^0-9]/g, "");
 
+  const heading = contact?.heading || t("contact");
+  const subtitle = contact?.subtitle || "We typically respond within 1 business hour.";
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
-      <h1 className="font-display text-3xl font-bold sm:text-4xl">{t("contact")}</h1>
-      <p className="mt-3 text-sm text-muted-foreground">We typically respond within 1 business hour.</p>
+      <h1 className="font-display text-3xl font-bold sm:text-4xl">{heading}</h1>
+      <p className="mt-3 text-sm text-muted-foreground">{subtitle}</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {brand?.phone ? (
@@ -68,6 +72,24 @@ function ContactPage() {
           </div>
         ) : null}
       </div>
+
+      {contact?.note ? (
+        <div className="mt-8 rounded-xl border border-border/70 bg-card p-5">
+          <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{contact.note}</p>
+        </div>
+      ) : null}
+
+      {contact?.map_embed_url ? (
+        <div className="mt-8 overflow-hidden rounded-xl border border-border/70">
+          <iframe
+            src={contact.map_embed_url}
+            title="Map"
+            className="h-72 w-full"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      ) : null}
 
       <div className="mt-8">
         <Button size="lg" onClick={() => setOpen(true)}>Send us a message</Button>
