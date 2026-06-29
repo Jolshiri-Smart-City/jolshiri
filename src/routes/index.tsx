@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/PropertyCard";
 import { featuredProperties } from "@/lib/properties.functions";
 import { useI18n } from "@/lib/i18n";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 
 const featuredOptions = queryOptions({
   queryKey: ["featured"],
   queryFn: () => featuredProperties(),
 });
+
+const DEFAULT_HERO_IMG = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=80";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,7 +21,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Search verified flats across every block of Jolshiri Smart City. Filter by price, size, possession, sector and amenities." },
       { property: "og:title", content: "Jolshiri Smart City — Find your flat in Purbachal" },
       { property: "og:description", content: "Verified flats. Real-time status. Bangla + English." },
-      { property: "og:image", content: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80" },
+      { property: "og:image", content: DEFAULT_HERO_IMG },
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(featuredOptions),
@@ -26,8 +29,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data: featured } = useSuspenseQuery(featuredOptions);
+  const { data: settings } = useSiteSettings();
+
+  const hero = settings?.hero;
+  const heroImg = hero?.image_url || DEFAULT_HERO_IMG;
+  const title = hero ? (lang === "bn" ? hero.title_bn : hero.title_en) : t("tagline");
+  const subtitle = hero ? (lang === "bn" ? hero.subtitle_bn : hero.subtitle_en) : t("heroSub");
+  const badge = hero ? (lang === "bn" ? hero.badge_bn : hero.badge_en) : "Purbachal · 48,000+ flats";
 
   return (
     <div>
@@ -36,23 +46,23 @@ function Index() {
         <div
           className="absolute inset-0 -z-20"
           style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=80)",
+            backgroundImage: `url(${heroImg})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[oklch(0.22_0.05_200)]/95 via-[oklch(0.25_0.07_200)]/80 to-[oklch(0.30_0.08_200)]/60" />
+        {/* Strong dark overlay for guaranteed text readability */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/65 to-black/35" />
         <div className="mx-auto max-w-7xl px-4 py-20 sm:py-28">
-          <div className="max-w-3xl text-white drop-shadow-sm">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
-              <BadgeCheck className="h-3.5 w-3.5" /> Purbachal · 48,000+ flats coming online
+          <div className="max-w-3xl text-white">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/40 px-3 py-1 text-xs font-medium backdrop-blur">
+              <BadgeCheck className="h-3.5 w-3.5" /> {badge}
             </span>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight drop-shadow-lg sm:text-5xl md:text-6xl">
-              {t("tagline")}
+            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl" style={{ textShadow: "0 2px 16px rgba(0,0,0,0.7)" }}>
+              {title}
             </h1>
-            <p className="mt-4 max-w-xl text-base text-white/95 drop-shadow sm:text-lg">
-              {t("heroSub")}
+            <p className="mt-4 max-w-xl text-base text-white sm:text-lg" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.7)" }}>
+              {subtitle}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-accent text-accent-foreground shadow-lg hover:bg-accent/90">
@@ -60,7 +70,7 @@ function Index() {
                   {t("browse")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/50 bg-white/15 text-white backdrop-blur hover:bg-white/25">
+              <Button asChild size="lg" variant="outline" className="border-white/60 bg-white/20 text-white backdrop-blur hover:bg-white/30">
                 <Link to="/properties" search={{ bedrooms: 3 } as never}>
                   3-bedroom flats
                 </Link>
@@ -69,6 +79,8 @@ function Index() {
           </div>
         </div>
       </section>
+
+
 
 
       {/* Why us */}
