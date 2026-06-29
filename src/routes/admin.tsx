@@ -325,6 +325,8 @@ function ListingDialog({
   const isEdit = !!row;
   const [form, setForm] = useState<Partial<AdminRow>>({});
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<Set<string>>(new Set());
+  const [photos, setPhotos] = useState<MediaItem[]>([]);
+  const [floorPlan, setFloorPlan] = useState<string>("");
   const amenitiesQ = useAmenities();
 
   useEffect(() => {
@@ -337,8 +339,20 @@ function ListingDialog({
         .then(({ data }) => {
           setSelectedAmenityIds(new Set((data ?? []).map((r: { amenity_id: string }) => r.amenity_id)));
         });
+      supabase
+        .from("property_media")
+        .select("id, url, media_type, display_order")
+        .eq("property_id", row.id)
+        .order("display_order")
+        .then(({ data }) => {
+          const all = (data ?? []) as MediaItem[];
+          setPhotos(all.filter((m) => m.media_type === "photo"));
+          setFloorPlan(all.find((m) => m.media_type === "floor_plan")?.url ?? "");
+        });
     } else {
       setSelectedAmenityIds(new Set());
+      setPhotos([]);
+      setFloorPlan("");
     }
   }, [row, open]);
 
@@ -381,8 +395,21 @@ function ListingDialog({
       }
       if (propertyId) {
         await supabase.from("property_amenities").delete().eq("property_id", propertyId);
-        const rows = Array.from(selectedAmenityIds).map((amenity_id) => ({ property_id: propertyId!, amenity_id }));
-        if (rows.length > 0) {
+        const amenityRows = Array.from(selectedAmenityIds).map((amenity_id) => ({ property_id: propertyId!, amenity_id }));
+        if (amenityRows.length > 0) {
+          const { error } = await supabase.from("property_amenities").insert(amenityRows);
+          if (error) throw error;
+        }
+        // Sync media: wipe and re-insert (simple, predictable)
+        await supabase.from("property_media").delete().eq("property_id", propertyId);
+        const mediaRows: Array<{ property_id: string; url: string; media_type: string; display_order: number }> = [];
+        photos.forEach((p, i) => mediaRows.push({ property_id: propertyId!, url: p.url, media_type: "photo", display_order: i }));
+        if (floorPlan) mediaRows.push({ property_id: propertyId!, url: floorPlan, media_type: "floor_plan", display_order: 0 });
+        if (mediaRows.length > 0) {
+          const { error } = await supabase.from("property_media").insert(mediaRows);
+          if (error) throw error;
+        }
+      }
           const { error } = await supabase.from("property_amenities").insert(rows);
           if (error) throw error;
         }
