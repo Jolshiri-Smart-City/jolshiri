@@ -239,7 +239,7 @@ function PropertyDetailPage() {
           <h2 className="font-display text-xl font-semibold sm:text-2xl">Similar properties in {data.project.sector}</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(similarQ.data ?? []).slice(0, 3).map((p) => (
-              <PropertyCard key={p.id} row={p} />)
+              <PropertyCard key={p.id} row={p} />
             ))}
           </div>
         </section>
