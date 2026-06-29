@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { z } from "zod";
-import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,27 +10,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PropertyCard } from "@/components/PropertyCard";
 import { listAmenities, listSectors, searchProperties } from "@/lib/properties.functions";
 import { useI18n } from "@/lib/i18n";
-import type { SearchFilters } from "@/lib/types";
+import type { FacingDirection, PropertyStatus, SearchFilters } from "@/lib/types";
 
-const searchSchema = z.object({
-  minPrice: fallback(z.number().optional(), undefined),
-  maxPrice: fallback(z.number().optional(), undefined),
-  minSize: fallback(z.number().optional(), undefined),
-  maxSize: fallback(z.number().optional(), undefined),
-  bedrooms: fallback(z.number().optional(), undefined),
-  sector: fallback(z.string().optional(), undefined),
-  status: fallback(z.enum(["available", "booked", "sold"]).optional(), undefined),
-  facing: fallback(
-    z.enum(["north","south","east","west","north_east","north_west","south_east","south_west"]).optional(),
-    undefined,
-  ),
-  possessionBefore: fallback(z.string().optional(), undefined),
-  amenities: fallback(z.array(z.string()).optional(), undefined),
-  sort: fallback(
-    z.enum(["price_asc", "price_desc", "size", "newest", "possession"]).optional(),
-    "newest",
-  ).default("newest"),
-});
+type SortKey = "price_asc" | "price_desc" | "size" | "newest" | "possession";
+
+interface RouteSearch {
+  minPrice?: number;
+  maxPrice?: number;
+  minSize?: number;
+  maxSize?: number;
+  bedrooms?: number;
+  sector?: string;
+  status?: PropertyStatus;
+  facing?: FacingDirection;
+  possessionBefore?: string;
+  amenities?: string[];
+  sort?: SortKey;
+}
+
+const STATUSES: PropertyStatus[] = ["available", "booked", "sold"];
+const FACINGS: FacingDirection[] = [
+  "north","south","east","west","north_east","north_west","south_east","south_west",
+];
+const SORTS: SortKey[] = ["price_asc","price_desc","size","newest","possession"];
+
+function parseNumber(v: unknown): number | undefined {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
 
 export const Route = createFileRoute("/properties")({
   head: () => ({
@@ -43,11 +48,29 @@ export const Route = createFileRoute("/properties")({
       { property: "og:description", content: "Live search across every available flat in Jolshiri." },
     ],
   }),
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (raw: Record<string, unknown>): RouteSearch => {
+    const status = typeof raw.status === "string" && STATUSES.includes(raw.status as PropertyStatus) ? (raw.status as PropertyStatus) : undefined;
+    const facing = typeof raw.facing === "string" && FACINGS.includes(raw.facing as FacingDirection) ? (raw.facing as FacingDirection) : undefined;
+    const sort = typeof raw.sort === "string" && SORTS.includes(raw.sort as SortKey) ? (raw.sort as SortKey) : "newest";
+    const amenities = Array.isArray(raw.amenities)
+      ? (raw.amenities as unknown[]).filter((a): a is string => typeof a === "string")
+      : undefined;
+    return {
+      minPrice: parseNumber(raw.minPrice),
+      maxPrice: parseNumber(raw.maxPrice),
+      minSize: parseNumber(raw.minSize),
+      maxSize: parseNumber(raw.maxSize),
+      bedrooms: parseNumber(raw.bedrooms),
+      sector: typeof raw.sector === "string" ? raw.sector : undefined,
+      status,
+      facing,
+      possessionBefore: typeof raw.possessionBefore === "string" ? raw.possessionBefore : undefined,
+      amenities: amenities && amenities.length ? amenities : undefined,
+      sort,
+    };
+  },
   component: PropertiesPage,
 });
-
-const FACINGS = ["north","south","east","west","north_east","north_west","south_east","south_west"] as const;
 
 function PropertiesPage() {
   const { t, lang } = useI18n();
@@ -67,15 +90,16 @@ function PropertiesPage() {
     queryFn: () => searchProperties({ data: filters }),
   });
 
-  function update<K extends keyof typeof search>(key: K, value: (typeof search)[K] | undefined) {
-    navigate({ search: (prev) => ({ ...prev, [key]: value as never }) });
+  function update<K extends keyof RouteSearch>(key: K, value: RouteSearch[K] | undefined) {
+    navigate({ search: (prev: RouteSearch) => ({ ...prev, [key]: value }) });
   }
 
   function toggleAmenity(name: string) {
     const cur = search.amenities ?? [];
-    const next = cur.includes(name) ? cur.filter((a) => a !== name) : [...cur, name];
+    const next = cur.includes(name) ? cur.filter((a: string) => a !== name) : [...cur, name];
     update("amenities", next.length ? next : undefined);
   }
+
 
   const priceMin = search.minPrice ?? 0;
   const priceMax = search.maxPrice ?? 50000000;
