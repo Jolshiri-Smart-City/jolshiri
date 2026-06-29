@@ -25,6 +25,8 @@ SUPABASE_PUBLISHABLE_KEY
 
 The `SUPABASE_*` values should match the corresponding `VITE_SUPABASE_*` values. Public property pages need these variables to load listings during server rendering.
 
+The public pages now include safe fallback publishable backend config, so missing variables should not make `/` return 500. Still add the variables above in Vercel because they keep the deployment explicit and are required for full client-side behavior.
+
 ## Admin features
 
 Public pages can run with the publishable backend key above. Admin-only user management features also need a service-role backend secret if you self-host outside Lovable.
