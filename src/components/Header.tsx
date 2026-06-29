@@ -1,22 +1,28 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Building2, ShieldCheck, LogOut, Languages, Menu, X } from "lucide-react";
+import { ShieldCheck, LogOut, Languages, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function Header() {
   const { t, lang, setLang } = useI18n();
   const { user, role } = useAuth();
+  const { data: settings } = useSiteSettings();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
   const isStaff = role === "admin" || role === "agent";
+  const brandName = settings?.brand
+    ? (lang === "bn" ? settings.brand.name_bn : settings.brand.name_en)
+    : t("brand");
+  const logoUrl = settings?.brand?.logo_url;
 
   const nav = [
-    { to: "/", label: t("brand"), exact: true, hideLabel: true },
+    { to: "/", label: brandName, exact: true, hideLabel: true },
     { to: "/properties", label: t("properties") },
   ];
 
@@ -24,8 +30,12 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold text-primary">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">J</span>
-          <span className="hidden sm:inline">{t("brand")}</span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={brandName} className="h-8 w-8 rounded-md object-cover" />
+          ) : (
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">J</span>
+          )}
+          <span className="hidden sm:inline">{brandName}</span>
         </Link>
 
         <nav className="ml-4 hidden items-center gap-1 md:flex">
