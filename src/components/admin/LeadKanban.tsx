@@ -96,6 +96,20 @@ export function LeadKanban() {
 
   return (
     <div className="mt-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {leadsQ.data?.length ?? 0} lead{(leadsQ.data?.length ?? 0) === 1 ? "" : "s"} · drag a card to change status
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exportLeadsCsv(leadsQ.data ?? [])}
+          disabled={!leadsQ.data?.length}
+        >
+          <Download className="mr-1 h-4 w-4" /> Export CSV
+        </Button>
+      </div>
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {COLUMNS.map((col) => (
