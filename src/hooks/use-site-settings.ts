@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useHydrated } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HeroSettings {
@@ -74,11 +74,15 @@ export interface FooterSettings {
 }
 
 export function useSiteSettings() {
-  const hydrated = useHydrated();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return useQuery({
     queryKey: ["site_settings"],
-    enabled: hydrated,
+    enabled: mounted,
     staleTime: 60_000,
     queryFn: async () => {
       const { data } = await supabase.from("site_settings").select("key, value");
