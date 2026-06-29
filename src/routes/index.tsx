@@ -15,6 +15,11 @@ const featuredOptions = queryOptions({
 });
 
 const DEFAULT_HERO_IMG = heroJolshiri;
+const DEFAULT_HERO = {
+  title: "Find your home in Purbachal's largest planned smart city.",
+  subtitle: "Compare verified flats across developers, sectors and budgets — in under a minute.",
+  badge: "Purbachal · 48,000+ flats coming online",
+};
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,9 +42,9 @@ function Index() {
 
   const hero = settings?.hero;
   const heroImg = hero?.image_url || DEFAULT_HERO_IMG;
-  const title = hero ? (lang === "bn" ? hero.title_bn : hero.title_en) : t("tagline");
-  const subtitle = hero ? (lang === "bn" ? hero.subtitle_bn : hero.subtitle_en) : t("heroSub");
-  const badge = hero ? (lang === "bn" ? hero.badge_bn : hero.badge_en) : "Purbachal · 48,000+ flats";
+  const title = hero ? (lang === "bn" ? hero.title_bn : hero.title_en) : DEFAULT_HERO.title;
+  const subtitle = hero ? (lang === "bn" ? hero.subtitle_bn : hero.subtitle_en) : DEFAULT_HERO.subtitle;
+  const badge = hero ? (lang === "bn" ? hero.badge_bn : hero.badge_en) : DEFAULT_HERO.badge;
 
   return (
     <div>
