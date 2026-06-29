@@ -1102,10 +1102,21 @@ function SettingsAdmin() {
   });
   const [why, setWhy] = useState<{ heading_en: string; heading_bn: string; items: Array<{ title_en: string; title_bn: string; body_en: string; body_bn: string }> }>({
     heading_en: "Why Jolshiri",
-    heading_bn: "কেন জলশিরি",
+    heading_bn: "",
     items: [],
   });
   const [testimonials, setTestimonials] = useState<Array<{ name: string; role?: string; text: string; rating?: number }>>([]);
+  const [seo, setSeo] = useState({
+    meta_title: "",
+    meta_description: "",
+    og_image: "",
+    keywords: "",
+    fb_pixel_id: "",
+    ga_id: "",
+    gtm_id: "",
+    head_html: "",
+    body_html: "",
+  });
 
   useEffect(() => {
     if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
@@ -1122,6 +1133,7 @@ function SettingsAdmin() {
     else if (tRaw && Array.isArray((tRaw as { items?: unknown[] }).items)) {
       setTestimonials((tRaw as { items: typeof testimonials }).items);
     }
+    if (settings?.seo) setSeo((s) => ({ ...s, ...settings.seo }));
   }, [settings]);
 
   const saveMut = useMutation({
@@ -1131,6 +1143,7 @@ function SettingsAdmin() {
       await updateSiteSetting({ data: { key: "brand", value: brand } });
       await updateSiteSetting({ data: { key: "why", value: why } });
       await updateSiteSetting({ data: { key: "testimonials", value: { items: testimonials } as never } });
+      await updateSiteSetting({ data: { key: "seo", value: seo } });
     },
     onSuccess: () => {
       toast.success("Site settings saved");
@@ -1146,8 +1159,7 @@ function SettingsAdmin() {
       <div className="rounded-lg border border-border/70 bg-card p-4">
         <h3 className="font-display text-lg font-semibold">Brand</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div><Label>Brand name (English)</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
-          <div><Label>Brand name (Bangla)</Label><Input value={brand.name_bn} onChange={(e) => setBrand({ ...brand, name_bn: e.target.value })} /></div>
+          <div><Label>Brand name</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
           <div className="sm:col-span-2">
             <SingleImageUploader bucket="branding" value={brand.logo_url} onChange={(url) => setBrand({ ...brand, logo_url: url })} label="Logo" aspect="square" prefix="logo-" />
           </div>
@@ -1161,8 +1173,7 @@ function SettingsAdmin() {
           <div><Label>Phone</Label><Input placeholder="+8801XXXXXXXXX" value={brand.phone} onChange={(e) => setBrand({ ...brand, phone: e.target.value })} /></div>
           <div><Label>WhatsApp</Label><Input placeholder="+8801XXXXXXXXX" value={brand.whatsapp} onChange={(e) => setBrand({ ...brand, whatsapp: e.target.value })} /></div>
           <div><Label>Email</Label><Input type="email" value={brand.email} onChange={(e) => setBrand({ ...brand, email: e.target.value })} /></div>
-          <div><Label>Address (English)</Label><Input value={brand.address_en} onChange={(e) => setBrand({ ...brand, address_en: e.target.value })} /></div>
-          <div><Label>Address (Bangla)</Label><Input value={brand.address_bn} onChange={(e) => setBrand({ ...brand, address_bn: e.target.value })} /></div>
+          <div><Label>Address</Label><Input value={brand.address_en} onChange={(e) => setBrand({ ...brand, address_en: e.target.value })} /></div>
           <div><Label>Facebook URL</Label><Input value={brand.facebook} onChange={(e) => setBrand({ ...brand, facebook: e.target.value })} /></div>
           <div><Label>Instagram URL</Label><Input value={brand.instagram} onChange={(e) => setBrand({ ...brand, instagram: e.target.value })} /></div>
           <div><Label>YouTube URL</Label><Input value={brand.youtube} onChange={(e) => setBrand({ ...brand, youtube: e.target.value })} /></div>
@@ -1177,21 +1188,17 @@ function SettingsAdmin() {
           <div className="sm:col-span-2">
             <SingleImageUploader bucket="branding" value={hero.image_url} onChange={(url) => setHero({ ...hero, image_url: url })} label="Background image" aspect="video" prefix="hero-" />
           </div>
-          <div><Label>Title (English)</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
-          <div><Label>Title (Bangla)</Label><Textarea rows={2} value={hero.title_bn} onChange={(e) => setHero({ ...hero, title_bn: e.target.value })} /></div>
-          <div><Label>Subtitle (English)</Label><Textarea rows={2} value={hero.subtitle_en} onChange={(e) => setHero({ ...hero, subtitle_en: e.target.value })} /></div>
-          <div><Label>Subtitle (Bangla)</Label><Textarea rows={2} value={hero.subtitle_bn} onChange={(e) => setHero({ ...hero, subtitle_bn: e.target.value })} /></div>
-          <div><Label>Badge (English)</Label><Input value={hero.badge_en} onChange={(e) => setHero({ ...hero, badge_en: e.target.value })} /></div>
-          <div><Label>Badge (Bangla)</Label><Input value={hero.badge_bn} onChange={(e) => setHero({ ...hero, badge_bn: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Title</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Subtitle</Label><Textarea rows={2} value={hero.subtitle_en} onChange={(e) => setHero({ ...hero, subtitle_en: e.target.value })} /></div>
+          <div className="sm:col-span-2"><Label>Badge</Label><Input value={hero.badge_en} onChange={(e) => setHero({ ...hero, badge_en: e.target.value })} /></div>
         </div>
       </div>
 
       <div className="rounded-lg border border-border/70 bg-card p-4">
         <h3 className="font-display text-lg font-semibold">Why Jolshiri</h3>
-        <p className="text-xs text-muted-foreground">Three cards shown on the home page. Leave empty to use defaults.</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div><Label>Heading (English)</Label><Input value={why.heading_en} onChange={(e) => setWhy({ ...why, heading_en: e.target.value })} /></div>
-          <div><Label>Heading (Bangla)</Label><Input value={why.heading_bn} onChange={(e) => setWhy({ ...why, heading_bn: e.target.value })} /></div>
+        <p className="text-xs text-muted-foreground">Cards shown on the home page. Leave empty to use defaults.</p>
+        <div className="mt-3">
+          <Label>Heading</Label><Input value={why.heading_en} onChange={(e) => setWhy({ ...why, heading_en: e.target.value })} />
         </div>
         <div className="mt-4 space-y-3">
           {why.items.map((it, i) => (
@@ -1202,12 +1209,8 @@ function SettingsAdmin() {
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Input placeholder="Title (English)" value={it.title_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, title_en: e.target.value } : x) })} />
-                <Input placeholder="Title (Bangla)" value={it.title_bn} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, title_bn: e.target.value } : x) })} />
-                <Textarea rows={2} placeholder="Body (English)" value={it.body_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, body_en: e.target.value } : x) })} />
-                <Textarea rows={2} placeholder="Body (Bangla)" value={it.body_bn} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, body_bn: e.target.value } : x) })} />
-              </div>
+              <Input placeholder="Title" value={it.title_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, title_en: e.target.value } : x) })} />
+              <Textarea rows={2} placeholder="Body" value={it.body_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, body_en: e.target.value } : x) })} />
             </div>
           ))}
         </div>
@@ -1249,6 +1252,23 @@ function SettingsAdmin() {
         </div>
       </div>
 
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">SEO & tracking</h3>
+        <p className="text-xs text-muted-foreground">Meta tags, Facebook Pixel and Google Analytics / Tag Manager. Changes apply on next page load.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2"><Label>Meta title</Label><Input value={seo.meta_title} onChange={(e) => setSeo({ ...seo, meta_title: e.target.value })} placeholder="Jolshiri Smart City — Property Search" /></div>
+          <div className="sm:col-span-2"><Label>Meta description</Label><Textarea rows={2} value={seo.meta_description} onChange={(e) => setSeo({ ...seo, meta_description: e.target.value })} placeholder="Find your home in Purbachal's largest planned smart city." /></div>
+          <div className="sm:col-span-2"><Label>Keywords (comma separated)</Label><Input value={seo.keywords} onChange={(e) => setSeo({ ...seo, keywords: e.target.value })} placeholder="purbachal flats, jolshiri, smart city" /></div>
+          <div className="sm:col-span-2">
+            <SingleImageUploader bucket="branding" value={seo.og_image} onChange={(url) => setSeo({ ...seo, og_image: url })} label="Default social share image (OG)" aspect="video" prefix="og-" />
+          </div>
+          <div><Label>Facebook Pixel ID</Label><Input value={seo.fb_pixel_id} onChange={(e) => setSeo({ ...seo, fb_pixel_id: e.target.value })} placeholder="1234567890" /></div>
+          <div><Label>Google Analytics ID (GA4)</Label><Input value={seo.ga_id} onChange={(e) => setSeo({ ...seo, ga_id: e.target.value })} placeholder="G-XXXXXXX" /></div>
+          <div><Label>Google Tag Manager ID</Label><Input value={seo.gtm_id} onChange={(e) => setSeo({ ...seo, gtm_id: e.target.value })} placeholder="GTM-XXXXXXX" /></div>
+          <div className="sm:col-span-2"><Label>Custom &lt;head&gt; HTML (advanced)</Label><Textarea rows={4} value={seo.head_html} onChange={(e) => setSeo({ ...seo, head_html: e.target.value })} placeholder="<!-- Search console verification, additional pixels, etc. -->" /></div>
+        </div>
+      </div>
+
       <div className="sticky bottom-4 flex justify-end">
         <Button size="lg" onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="shadow-lg">
           {saveMut.isPending ? "Saving…" : "Save all settings"}
@@ -1257,4 +1277,5 @@ function SettingsAdmin() {
     </div>
   );
 }
+
 
