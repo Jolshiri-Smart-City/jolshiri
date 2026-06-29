@@ -128,7 +128,12 @@ function Index() {
       </section>
 
       <Testimonials
-        items={(settings as { testimonials?: Array<{ name: string; role?: string; text: string; rating?: number }> } | undefined)?.testimonials}
+        items={(() => {
+          const raw = settings?.testimonials;
+          if (Array.isArray(raw)) return raw;
+          if (raw && Array.isArray((raw as { items?: unknown[] }).items)) return (raw as { items: Array<{ name: string; role?: string; text: string; rating?: number }> }).items;
+          return undefined;
+        })()}
       />
     </div>
   );
