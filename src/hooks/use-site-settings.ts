@@ -89,6 +89,7 @@ export function useSiteSettings() {
         seo: (map.seo ?? null) as SeoSettings | null,
         about: (map.about ?? null) as AboutSettings | null,
         contact: (map.contact ?? null) as ContactSettings | null,
+        footer: (map.footer ?? null) as FooterSettings | null,
       };
     },
   });
