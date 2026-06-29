@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
+import { getPublicSupabase } from "@/lib/supabase-server";
 
 // TODO: replace with your project URL once a custom domain is set.
 const BASE_URL = "";
@@ -8,10 +9,7 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
+        const supabase = getPublicSupabase();
         const { data } = await supabase
           .from("properties")
           .select("id, updated_at")
