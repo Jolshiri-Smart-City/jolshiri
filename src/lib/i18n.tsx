@@ -92,6 +92,10 @@ const DICT = {
   callback: { en: "Callback", bn: "কলব্যাক" },
   siteVisit: { en: "Site visit", bn: "সাইট ভিজিট" },
   booking: { en: "Booking", bn: "বুকিং" },
+  home: { en: "Home", bn: "হোম" },
+  about: { en: "About Us", bn: "আমাদের সম্পর্কে" },
+  contact: { en: "Contact Us", bn: "যোগাযোগ" },
+  compare: { en: "Compare", bn: "তুলনা" },
 };
 
 type Key = keyof typeof DICT;
