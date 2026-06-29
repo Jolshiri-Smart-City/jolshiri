@@ -111,6 +111,7 @@ function PropertyDetailPage() {
   const { data: settings } = useSiteSettings();
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [inquireOpen, setInquireOpen] = useState(false);
   const [compareIds, setCompareIdsLocal] = useState<string[]>([]);
 
   useEffect(() => {
