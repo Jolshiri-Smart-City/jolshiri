@@ -5,6 +5,7 @@ import { formatBDT, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LeadDialog } from "@/components/LeadDialog";
+import { ShareButton } from "@/components/ShareButton";
 import { useState } from "react";
 
 const FALLBACK = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1600&q=80";
@@ -70,7 +71,7 @@ export function PropertyCard({ row }: { row: ListingRow }) {
           </div>
         </div>
       </Link>
-      <div className="mt-auto flex gap-2 border-t border-border/60 p-3">
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-border/60 p-3">
         <Button asChild variant="outline" size="sm" className="flex-1">
           <Link to="/properties/$id" params={{ id: row.id }}>{t("viewDetails") ?? "View details"}</Link>
         </Button>
@@ -82,6 +83,10 @@ export function PropertyCard({ row }: { row: ListingRow }) {
           <MessageSquare className="mr-1 h-3.5 w-3.5" />
           {t("inquire") ?? "Inquire"}
         </Button>
+        <ShareButton
+          title={`${row.project_name} · ${t("unit")} ${row.unit_number}`}
+          url={typeof window !== "undefined" ? `${window.location.origin}/properties/${row.id}` : `/properties/${row.id}`}
+        />
       </div>
       <LeadDialog
         open={open}

@@ -80,6 +80,7 @@ export type Database = {
           logo_url: string | null
           name: string
           updated_at: string
+          verified: boolean
         }
         Insert: {
           contact_email?: string | null
@@ -90,6 +91,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           updated_at?: string
+          verified?: boolean
         }
         Update: {
           contact_email?: string | null
@@ -100,6 +102,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           updated_at?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -416,8 +419,10 @@ export type Database = {
           price_per_sqft: number | null
           price_total: number
           project_id: string
+          publish_at: string
           registration_type: string | null
           size_sqft: number
+          slug: string | null
           status: Database["public"]["Enums"]["property_status"]
           total_floors: number | null
           unit_number: string
@@ -447,8 +452,10 @@ export type Database = {
           price_per_sqft?: number | null
           price_total: number
           project_id: string
+          publish_at?: string
           registration_type?: string | null
           size_sqft: number
+          slug?: string | null
           status?: Database["public"]["Enums"]["property_status"]
           total_floors?: number | null
           unit_number: string
@@ -478,8 +485,10 @@ export type Database = {
           price_per_sqft?: number | null
           price_total?: number
           project_id?: string
+          publish_at?: string
           registration_type?: string | null
           size_sqft?: number
+          slug?: string | null
           status?: Database["public"]["Enums"]["property_status"]
           total_floors?: number | null
           unit_number?: string

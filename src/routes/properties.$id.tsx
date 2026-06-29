@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
 import { EmiCalculator } from "@/components/EmiCalculator";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ShareButton } from "@/components/ShareButton";
+import { PropertyFAQ, buildPropertyFaqs } from "@/components/PropertyFAQ";
+import { StickyMobileBar } from "@/components/StickyMobileBar";
+import { LeadDialog } from "@/components/LeadDialog";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { getCompareIds, toggleCompare } from "./compare";
 
@@ -31,9 +35,17 @@ export const Route = createFileRoute("/properties/$id")({
     if (!p) throw notFound();
     return p;
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [{ title: "Property — Jolshiri" }] };
-    const jsonLd = {
+    const path = `/properties/${params.id}`;
+    const faqs = buildPropertyFaqs({
+      unit: loaderData.unit_number,
+      project: loaderData.project.name,
+      possession: loaderData.possession_date,
+      bookingMoney: loaderData.booking_money ? Number(loaderData.booking_money) : null,
+      ready: !!loaderData.is_ready_to_move,
+    });
+    const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: `${loaderData.project.name} · Unit ${loaderData.unit_number}`,
@@ -52,6 +64,24 @@ export const Route = createFileRoute("/properties/$id")({
               : "https://schema.org/SoldOut",
       },
     };
+    const faqLd = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+        { "@type": "ListItem", position: 2, name: "Properties", item: "/properties" },
+        { "@type": "ListItem", position: 3, name: `${loaderData.project.name} · ${loaderData.unit_number}`, item: path },
+      ],
+    };
     return {
       meta: [
         { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
@@ -59,9 +89,16 @@ export const Route = createFileRoute("/properties/$id")({
         { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
         { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
         { property: "og:image", content: loaderData.media[0]?.url ?? "" },
+        { property: "og:url", content: path },
         { property: "og:type", content: "product" },
+        { property: "twitter:image", content: loaderData.media[0]?.url ?? "" },
       ],
-      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+      links: [{ rel: "canonical", href: path }],
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(productLd) },
+        { type: "application/ld+json", children: JSON.stringify(faqLd) },
+        { type: "application/ld+json", children: JSON.stringify(breadcrumbLd) },
+      ],
     };
   },
   component: PropertyDetailPage,
@@ -74,6 +111,7 @@ function PropertyDetailPage() {
   const { data: settings } = useSiteSettings();
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [inquireOpen, setInquireOpen] = useState(false);
   const [compareIds, setCompareIdsLocal] = useState<string[]>([]);
 
   useEffect(() => {
@@ -126,16 +164,18 @@ function PropertyDetailPage() {
             <div className="text-xs text-muted-foreground">৳{Math.round(Number(data.price_per_sqft)).toLocaleString()} / {t("sqft")}</div>
           ) : null}
           <StatusBadge status={data.status} />
-          <Button
-            type="button"
-            variant={isCompared ? "default" : "outline"}
-            size="sm"
-            className="mt-2"
-            onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
-          >
-            {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
-            {isCompared ? "In compare" : "Compare"}
-          </Button>
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <ShareButton title={`${data.project.name} · Unit ${data.unit_number}`} />
+            <Button
+              type="button"
+              variant={isCompared ? "default" : "outline"}
+              size="sm"
+              onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
+            >
+              {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
+              {isCompared ? "In compare" : "Compare"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -245,6 +285,19 @@ function PropertyDetailPage() {
         </section>
       )}
 
+      <PropertyFAQ
+        faqs={buildPropertyFaqs({
+          unit: data.unit_number,
+          project: data.project.name,
+          possession: data.possession_date,
+          bookingMoney: data.booking_money ? Number(data.booking_money) : null,
+          ready: !!data.is_ready_to_move,
+        })}
+      />
+
+      {/* Spacer so sticky mobile bar doesn't cover content */}
+      <div className="h-20 lg:hidden" />
+
       <Lightbox
         open={lightboxOpen}
         close={() => setLightboxOpen(false)}
@@ -255,6 +308,18 @@ function PropertyDetailPage() {
       <WhatsAppFab
         phone={waPhone}
         message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
+      />
+      <StickyMobileBar
+        onInquire={() => setInquireOpen(true)}
+        phone={(settings?.brand as { phone?: string } | undefined)?.phone}
+        whatsapp={waPhone}
+        whatsappMessage={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}.`}
+      />
+      <LeadDialog
+        open={inquireOpen}
+        onOpenChange={setInquireOpen}
+        propertyId={data.id}
+        propertyLabel={`${data.project.name} · ${t("unit")} ${data.unit_number}`}
       />
     </div>
   );

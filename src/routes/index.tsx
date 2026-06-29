@@ -3,6 +3,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { ArrowRight, BadgeCheck, Filter, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/PropertyCard";
+import { Testimonials } from "@/components/Testimonials";
 import { featuredProperties } from "@/lib/properties.functions";
 import { useI18n } from "@/lib/i18n";
 import { useSiteSettings } from "@/hooks/use-site-settings";
@@ -103,7 +104,7 @@ function Index() {
       </section>
 
       {/* Featured */}
-      <section className="mx-auto max-w-7xl px-4 pb-20">
+      <section className="mx-auto max-w-7xl px-4 pb-12">
         <div className="flex items-end justify-between">
           <h2 className="font-display text-2xl font-semibold sm:text-3xl">{t("featured")}</h2>
           <Link to="/properties" className="text-sm font-medium text-primary hover:underline">
@@ -116,6 +117,10 @@ function Index() {
           ))}
         </div>
       </section>
+
+      <Testimonials
+        items={(settings as { testimonials?: Array<{ name: string; role?: string; text: string; rating?: number }> } | undefined)?.testimonials}
+      />
     </div>
   );
 }

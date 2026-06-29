@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DndContext, type DragEndEvent, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Mail, Phone, User, StickyNote, GripVertical } from "lucide-react";
+import { Mail, Phone, User, StickyNote, GripVertical, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,6 +96,20 @@ export function LeadKanban() {
 
   return (
     <div className="mt-4">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {leadsQ.data?.length ?? 0} lead{(leadsQ.data?.length ?? 0) === 1 ? "" : "s"} · drag a card to change status
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => exportLeadsCsv(leadsQ.data ?? [])}
+          disabled={!leadsQ.data?.length}
+        >
+          <Download className="mr-1 h-4 w-4" /> Export CSV
+        </Button>
+      </div>
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {COLUMNS.map((col) => (
@@ -276,4 +290,28 @@ function LeadDrawer({
       </SheetContent>
     </Sheet>
   );
+}
+
+function exportLeadsCsv(rows: LeadRow[]) {
+  const headers = ["created_at", "full_name", "phone", "email", "status", "request_type", "message", "property_id", "assigned_to"];
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push([
+      r.created_at, r.full_name, r.phone, r.email ?? "", r.status,
+      r.request_type ?? "", r.message ?? "", r.property_id ?? "", r.assigned_to ?? "",
+    ].map(escape).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `jolshiri-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
