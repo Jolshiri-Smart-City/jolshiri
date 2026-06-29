@@ -1121,6 +1121,7 @@ function SettingsAdmin() {
     head_html: "",
     body_html: "",
   });
+  const [footer, setFooter] = useState({ copyright: "" });
 
   useEffect(() => {
     if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
