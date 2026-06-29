@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 
 function NotFoundComponent() {
   return (
@@ -106,20 +108,75 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function TrackingInjector() {
+  const { data: settings } = useSiteSettings();
+  const seo = settings?.seo;
+  useEffect(() => {
+    if (!seo) return;
+    if (seo.meta_title) document.title = seo.meta_title;
+    if (seo.meta_description) {
+      let m = document.querySelector('meta[name="description"]');
+      if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
+      m.setAttribute("content", seo.meta_description);
+    }
+    if (seo.keywords) {
+      let m = document.querySelector('meta[name="keywords"]');
+      if (!m) { m = document.createElement("meta"); m.setAttribute("name", "keywords"); document.head.appendChild(m); }
+      m.setAttribute("content", seo.keywords);
+    }
+    const created: HTMLElement[] = [];
+    const addScript = (id: string, src?: string, inner?: string) => {
+      if (document.getElementById(id)) return;
+      const s = document.createElement("script");
+      s.id = id; s.async = true;
+      if (src) s.src = src;
+      if (inner) s.text = inner;
+      document.head.appendChild(s);
+      created.push(s);
+    };
+    if (seo.ga_id) {
+      addScript("ga-loader", `https://www.googletagmanager.com/gtag/js?id=${seo.ga_id}`);
+      addScript("ga-init", undefined, `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${seo.ga_id}');`);
+    }
+    if (seo.gtm_id) {
+      addScript("gtm-init", undefined, `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${seo.gtm_id}');`);
+    }
+    if (seo.fb_pixel_id) {
+      addScript("fb-pixel", undefined, `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${seo.fb_pixel_id}');fbq('track','PageView');`);
+    }
+    if (seo.head_html) {
+      const tpl = document.createElement("template");
+      tpl.innerHTML = seo.head_html;
+      Array.from(tpl.content.children).forEach((el) => { document.head.appendChild(el); created.push(el as HTMLElement); });
+    }
+    return () => { created.forEach((el) => el.remove()); };
+  }, [seo?.ga_id, seo?.gtm_id, seo?.fb_pixel_id, seo?.head_html, seo?.meta_title, seo?.meta_description, seo?.keywords]);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <div className="flex min-h-screen flex-col bg-background">
-          <Header />
-          <main className="flex-1">
-            <Outlet />
-          </main>
-          <Footer />
-        </div>
+        <AppShell />
         <Toaster richColors position="top-right" />
       </I18nProvider>
     </QueryClientProvider>
+  );
+}
+
+function AppShell() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const hideFooter = pathname.startsWith("/admin");
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <TrackingInjector />
+      <Header />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      {hideFooter ? null : <Footer />}
+    </div>
   );
 }

@@ -44,9 +44,9 @@ function Index() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section className="relative isolate overflow-hidden">
         <div
-          className="absolute inset-0 -z-20"
+          className="absolute inset-0 z-0"
           style={{
             backgroundImage: `url(${heroImg})`,
             backgroundSize: "cover",
@@ -54,8 +54,8 @@ function Index() {
           }}
         />
         {/* Strong dark overlay for guaranteed text readability */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/65 to-black/35" />
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:py-28">
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-black/85 via-black/65 to-black/35" />
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:py-28">
           <div className="max-w-3xl text-white">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/40 px-3 py-1 text-xs font-medium backdrop-blur">
               <BadgeCheck className="h-3.5 w-3.5" /> {badge}

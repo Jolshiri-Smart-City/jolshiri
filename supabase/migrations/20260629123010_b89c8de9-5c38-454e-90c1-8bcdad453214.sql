@@ -1,0 +1,2 @@
+UPDATE public.site_settings SET value = value - 'image_url' WHERE key = 'hero';
+INSERT INTO public.site_settings (key, value) VALUES ('seo', '{"meta_title":"Jolshiri Smart City — Property Search","meta_description":"Find your home in Purbachal''s largest planned smart city.","og_image":"","keywords":"","fb_pixel_id":"","ga_id":"","gtm_id":"","head_html":"","body_html":""}'::jsonb) ON CONFLICT (key) DO NOTHING;

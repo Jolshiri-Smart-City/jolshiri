@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShieldCheck, LogOut, Languages, Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -10,16 +10,15 @@ import { cn } from "@/lib/utils";
 import jolshiriLogo from "@/assets/jolshiri-logo.png";
 
 export function Header() {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const { user, role } = useAuth();
   const { data: settings } = useSiteSettings();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
   const isStaff = role === "admin" || role === "agent";
-  const brandName = settings?.brand
-    ? (lang === "bn" ? settings.brand.name_bn : settings.brand.name_en)
-    : t("brand");
+  const isAdminArea = pathname.startsWith("/admin");
+  const brandName = settings?.brand?.name_en || t("brand");
   const logoUrl = settings?.brand?.logo_url || jolshiriLogo;
 
   const nav: Array<{ to: string; label: string; exact?: boolean }> = [
@@ -54,7 +53,7 @@ export function Header() {
               </Link>
             );
           })}
-          {isStaff ? (
+          {isStaff && isAdminArea ? (
             <Link
               to="/admin"
               className={cn(
@@ -68,18 +67,7 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLang(lang === "en" ? "bn" : "en")}
-            className="gap-1.5"
-            title="Language"
-          >
-            <Languages className="h-4 w-4" />
-            <span className="text-xs font-semibold">{lang === "en" ? "বাংলা" : "EN"}</span>
-          </Button>
-
-          {user ? (
+          {user && isAdminArea ? (
             <Button
               variant="ghost"
               size="sm"
@@ -89,14 +77,7 @@ export function Header() {
               <LogOut className="h-4 w-4" />
               {t("signOut")}
             </Button>
-          ) : (
-            <Button asChild variant="outline" size="sm" className="hidden gap-1.5 sm:inline-flex">
-              <Link to="/auth">
-                <ShieldCheck className="h-4 w-4" />
-                Admin
-              </Link>
-            </Button>
-          )}
+          ) : null}
 
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((v) => !v)}>
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -116,7 +97,7 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
-            {isStaff ? (
+            {isStaff && isAdminArea ? (
               <Link
                 to="/admin"
                 onClick={() => setOpen(false)}
@@ -125,7 +106,7 @@ export function Header() {
                 {t("admin")}
               </Link>
             ) : null}
-            {user ? (
+            {user && isAdminArea ? (
               <button
                 onClick={() => {
                   setOpen(false);
@@ -135,15 +116,7 @@ export function Header() {
               >
                 {t("signOut")}
               </button>
-            ) : (
-              <Link
-                to="/auth"
-                onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-              >
-                Admin sign in
-              </Link>
-            )}
+            ) : null}
           </div>
         </div>
       ) : null}

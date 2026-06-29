@@ -42,6 +42,17 @@ export interface TestimonialItem {
   text: string;
   rating?: number;
 }
+export interface SeoSettings {
+  meta_title?: string;
+  meta_description?: string;
+  og_image?: string;
+  keywords?: string;
+  fb_pixel_id?: string;
+  ga_id?: string;
+  gtm_id?: string;
+  head_html?: string;
+  body_html?: string;
+}
 
 export function useSiteSettings() {
   return useQuery({
@@ -57,6 +68,7 @@ export function useSiteSettings() {
         why: (map.why ?? null) as WhySettings | null,
         faqs: (map.faqs ?? null) as { items?: Array<{ q: string; a: string }> } | Array<{ q: string; a: string }> | null,
         testimonials: (map.testimonials ?? null) as TestimonialItem[] | { items?: TestimonialItem[] } | null,
+        seo: (map.seo ?? null) as SeoSettings | null,
       };
     },
   });
