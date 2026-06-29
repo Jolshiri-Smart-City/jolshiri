@@ -104,7 +104,7 @@ function ListingsAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, unit_number, project_id, size_sqft, bedrooms, bathrooms, price_total, price_per_sqft, status, possession_date, floor_number, description")
+        .select("id, unit_number, project_id, size_sqft, bedrooms, bathrooms, price_total, price_per_sqft, status, possession_date, floor_number, total_floors, description, facing, has_balcony, booking_money, is_negotiable, is_ready_to_move, construction_stage, plot_road_number, registration_type, ownership_docs_available, lat, lng")
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
