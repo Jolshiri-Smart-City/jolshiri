@@ -14,6 +14,33 @@ export interface BrandSettings {
   name_en: string;
   name_bn: string;
   logo_url: string;
+  whatsapp?: string;
+  phone?: string;
+  email?: string;
+  address_en?: string;
+  address_bn?: string;
+  facebook?: string;
+  instagram?: string;
+  youtube?: string;
+  linkedin?: string;
+  twitter?: string;
+}
+export interface WhyItem {
+  title_en: string;
+  title_bn: string;
+  body_en: string;
+  body_bn: string;
+}
+export interface WhySettings {
+  heading_en?: string;
+  heading_bn?: string;
+  items?: WhyItem[];
+}
+export interface TestimonialItem {
+  name: string;
+  role?: string;
+  text: string;
+  rating?: number;
 }
 
 export function useSiteSettings() {
@@ -27,8 +54,9 @@ export function useSiteSettings() {
       return {
         hero: (map.hero ?? null) as HeroSettings | null,
         brand: (map.brand ?? null) as BrandSettings | null,
+        why: (map.why ?? null) as WhySettings | null,
         faqs: (map.faqs ?? null) as { items?: Array<{ q: string; a: string }> } | Array<{ q: string; a: string }> | null,
-        testimonials: (map.testimonials ?? null) as unknown,
+        testimonials: (map.testimonials ?? null) as TestimonialItem[] | { items?: TestimonialItem[] } | null,
       };
     },
   });
