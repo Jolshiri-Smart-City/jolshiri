@@ -402,7 +402,7 @@ function ListingDialog({
         }
         // Sync media: wipe and re-insert (simple, predictable)
         await supabase.from("property_media").delete().eq("property_id", propertyId);
-        const mediaRows: Array<{ property_id: string; url: string; media_type: string; display_order: number }> = [];
+        const mediaRows: Array<{ property_id: string; url: string; media_type: "photo" | "floor_plan"; display_order: number }> = [];
         photos.forEach((p, i) => mediaRows.push({ property_id: propertyId!, url: p.url, media_type: "photo", display_order: i }));
         if (floorPlan) mediaRows.push({ property_id: propertyId!, url: floorPlan, media_type: "floor_plan", display_order: 0 });
         if (mediaRows.length > 0) {
