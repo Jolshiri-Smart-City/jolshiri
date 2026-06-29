@@ -315,7 +315,7 @@ function PropertyDetailPage() {
       />
       <WhatsAppFab
         phone={waPhone}
-        message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
+        message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}.`}
       />
       <StickyMobileBar
         onInquire={() => setInquireOpen(true)}
