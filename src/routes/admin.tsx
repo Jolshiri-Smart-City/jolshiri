@@ -11,12 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n, formatBDT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PropertyStatus } from "@/lib/types";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · Jolshiri" }] }),
@@ -65,18 +66,25 @@ function AdminPage() {
   }, [user, role, loading, navigate]);
 
   if (!user || (role && role !== "admin" && role !== "agent")) return null;
+  const isAdmin = role === "admin";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="font-display text-2xl font-semibold sm:text-3xl">{t("admin")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Manage listings, status and leads.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Manage listings, leads, attributes and site settings.</p>
       <Tabs defaultValue="listings" className="mt-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="listings">Listings</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
+          {isAdmin && <TabsTrigger value="attributes">Attributes</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="settings">Site settings</TabsTrigger>}
         </TabsList>
         <TabsContent value="listings"><ListingsAdmin /></TabsContent>
         <TabsContent value="leads"><LeadsAdmin /></TabsContent>
+        {isAdmin && <TabsContent value="attributes"><AttributesAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="users"><UsersAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="settings"><SettingsAdmin /></TabsContent>}
       </Tabs>
     </div>
   );
@@ -88,6 +96,16 @@ function useProjects() {
     queryFn: async () => {
       const { data } = await supabase.from("projects").select("id, name, sector").order("name");
       return (data ?? []) as Array<{ id: string; name: string; sector: string }>;
+    },
+  });
+}
+
+function useAmenities() {
+  return useQuery({
+    queryKey: ["admin", "amenities"],
+    queryFn: async () => {
+      const { data } = await supabase.from("amenities").select("id, name").order("name");
+      return (data ?? []) as Array<{ id: string; name: string }>;
     },
   });
 }
@@ -194,9 +212,7 @@ function ListingsAdmin() {
   return (
     <div className="mt-4 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm text-muted-foreground">
-          {listQ.data?.length ?? 0} listings
-        </div>
+        <div className="text-sm text-muted-foreground">{listQ.data?.length ?? 0} listings</div>
         <div className="flex gap-2">
           <input
             ref={fileRef}
@@ -307,9 +323,22 @@ function ListingDialog({
 }) {
   const isEdit = !!row;
   const [form, setForm] = useState<Partial<AdminRow>>({});
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<Set<string>>(new Set());
+  const amenitiesQ = useAmenities();
 
   useEffect(() => {
     setForm(row ?? { status: "available", bedrooms: 3 });
+    if (row?.id) {
+      supabase
+        .from("property_amenities")
+        .select("amenity_id")
+        .eq("property_id", row.id)
+        .then(({ data }) => {
+          setSelectedAmenityIds(new Set((data ?? []).map((r: { amenity_id: string }) => r.amenity_id)));
+        });
+    } else {
+      setSelectedAmenityIds(new Set());
+    }
   }, [row, open]);
 
   const mut = useMutation({
@@ -340,12 +369,22 @@ function ListingDialog({
         lat: numOrNull(form.lat),
         lng: numOrNull(form.lng),
       };
+      let propertyId = row?.id;
       if (isEdit) {
         const { error } = await supabase.from("properties").update(payload).eq("id", row!.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("properties").insert(payload);
+        const { data, error } = await supabase.from("properties").insert(payload).select("id").single();
         if (error) throw error;
+        propertyId = (data as { id: string }).id;
+      }
+      if (propertyId) {
+        await supabase.from("property_amenities").delete().eq("property_id", propertyId);
+        const rows = Array.from(selectedAmenityIds).map((amenity_id) => ({ property_id: propertyId!, amenity_id }));
+        if (rows.length > 0) {
+          const { error } = await supabase.from("property_amenities").insert(rows);
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
@@ -358,6 +397,14 @@ function ListingDialog({
 
   const set = <K extends keyof AdminRow>(k: K, v: AdminRow[K] | string | boolean | number | null) =>
     setForm((f) => ({ ...f, [k]: v as never }));
+
+  function toggleAmenity(id: string) {
+    setSelectedAmenityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -443,6 +490,24 @@ function ListingDialog({
             <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!form.ownership_docs_available} onChange={(e) => set("ownership_docs_available", e.target.checked)} /> Ownership docs</label>
           </div>
           <div>
+            <Label>Amenities</Label>
+            <div className="mt-2 grid grid-cols-2 gap-2 rounded-md border border-border/60 p-3 text-sm sm:grid-cols-3">
+              {(amenitiesQ.data ?? []).map((a) => (
+                <label key={a.id} className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedAmenityIds.has(a.id)}
+                    onChange={() => toggleAmenity(a.id)}
+                  />
+                  {a.name}
+                </label>
+              ))}
+              {amenitiesQ.data?.length === 0 && (
+                <span className="text-muted-foreground">No amenities yet — add them in the Attributes tab.</span>
+              )}
+            </div>
+          </div>
+          <div>
             <Label>Description</Label>
             <Textarea rows={4} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
           </div>
@@ -455,7 +520,6 @@ function ListingDialog({
     </Dialog>
   );
 }
-
 
 function LeadsAdmin() {
   const q = useQuery({
@@ -502,6 +566,345 @@ function LeadsAdmin() {
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Attributes (Projects + Amenities) ---------------- */
+
+function AttributesAdmin() {
+  return (
+    <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      <ProjectsManager />
+      <AmenitiesManager />
+    </div>
+  );
+}
+
+function ProjectsManager() {
+  const qc = useQueryClient();
+  const projects = useProjects();
+  const devsQ = useQuery({
+    queryKey: ["admin", "developers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("developers").select("id, name").order("name");
+      return (data ?? []) as Array<{ id: string; name: string }>;
+    },
+  });
+  const [name, setName] = useState("");
+  const [sector, setSector] = useState("");
+  const [developerId, setDeveloperId] = useState("");
+
+  const addMut = useMutation({
+    mutationFn: async () => {
+      if (!name || !sector || !developerId) throw new Error("Name, sector and developer required");
+      const { error } = await supabase.from("projects").insert({ name, sector, developer_id: developerId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Project added");
+      setName(""); setSector("");
+      qc.invalidateQueries({ queryKey: ["admin", "projects"] });
+      qc.invalidateQueries({ queryKey: ["sectors"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("projects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["admin", "projects"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">Projects</h3>
+      <p className="text-xs text-muted-foreground">Add or remove projects shown in the listing form and filters.</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-4">
+        <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input placeholder="Sector" value={sector} onChange={(e) => setSector(e.target.value)} />
+        <Select value={developerId} onValueChange={setDeveloperId}>
+          <SelectTrigger><SelectValue placeholder="Developer" /></SelectTrigger>
+          <SelectContent>
+            {(devsQ.data ?? []).map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button onClick={() => addMut.mutate()} disabled={addMut.isPending}><Plus className="mr-1 h-4 w-4" />Add</Button>
+      </div>
+      <ul className="mt-3 divide-y divide-border/60 text-sm">
+        {(projects.data ?? []).map((p) => (
+          <li key={p.id} className="flex items-center justify-between py-2">
+            <span><span className="font-medium">{p.name}</span> · <span className="text-muted-foreground">{p.sector}</span></span>
+            <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${p.name}?`)) delMut.mutate(p.id); }}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function AmenitiesManager() {
+  const qc = useQueryClient();
+  const amenities = useAmenities();
+  const [name, setName] = useState("");
+
+  const addMut = useMutation({
+    mutationFn: async () => {
+      if (!name.trim()) throw new Error("Name required");
+      const { error } = await supabase.from("amenities").insert({ name: name.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Amenity added");
+      setName("");
+      qc.invalidateQueries({ queryKey: ["admin", "amenities"] });
+      qc.invalidateQueries({ queryKey: ["amenities"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("amenities").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["admin", "amenities"] });
+      qc.invalidateQueries({ queryKey: ["amenities"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">Amenities</h3>
+      <p className="text-xs text-muted-foreground">
+        Used as filter chips on the search page and checkboxes in the listing form.
+      </p>
+      <div className="mt-3 flex gap-2">
+        <Input placeholder="Amenity name (e.g. Gym)" value={name} onChange={(e) => setName(e.target.value)} />
+        <Button onClick={() => addMut.mutate()} disabled={addMut.isPending}><Plus className="mr-1 h-4 w-4" />Add</Button>
+      </div>
+      <ul className="mt-3 divide-y divide-border/60 text-sm">
+        {(amenities.data ?? []).map((a) => (
+          <li key={a.id} className="flex items-center justify-between py-2">
+            <span>{a.name}</span>
+            <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${a.name}?`)) delMut.mutate(a.id); }}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ---------------- Users ---------------- */
+
+function UsersAdmin() {
+  const qc = useQueryClient();
+  const usersQ = useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: async () => {
+      const { listUsers } = await import("@/lib/admin-users.functions");
+      return await listUsers();
+    },
+  });
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "", fullName: "", role: "agent" as "admin" | "agent" | "buyer" });
+
+  const createMut = useMutation({
+    mutationFn: async () => {
+      const { createAdminUser } = await import("@/lib/admin-users.functions");
+      return await createAdminUser({ data: form });
+    },
+    onSuccess: () => {
+      toast.success("User created");
+      setOpen(false);
+      setForm({ email: "", password: "", fullName: "", role: "agent" });
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const roleMut = useMutation({
+    mutationFn: async ({ id, role }: { id: string; role: "admin" | "agent" | "buyer" }) => {
+      const { updateUserRole } = await import("@/lib/admin-users.functions");
+      return await updateUserRole({ data: { id, role } });
+    },
+    onSuccess: () => {
+      toast.success("Role updated");
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { deleteAdminUser } = await import("@/lib/admin-users.functions");
+      return await deleteAdminUser({ data: { id } });
+    },
+    onSuccess: () => {
+      toast.success("User deleted");
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">{usersQ.data?.length ?? 0} users</div>
+        <Button size="sm" onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" />Add user</Button>
+      </div>
+      <div className="overflow-hidden rounded-lg border border-border/70">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2">Name</th>
+              <th className="px-3 py-2">Email</th>
+              <th className="px-3 py-2">Role</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {usersQ.isLoading ? (
+              <tr><td colSpan={4} className="p-4"><Skeleton className="h-20 w-full" /></td></tr>
+            ) : (usersQ.data ?? []).map((u) => (
+              <tr key={u.id} className="border-t border-border/60">
+                <td className="px-3 py-2 font-medium">{u.full_name ?? "—"}</td>
+                <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
+                <td className="px-3 py-2">
+                  <Select value={u.role} onValueChange={(v) => roleMut.mutate({ id: u.id, role: v as never })}>
+                    <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="agent">Sales / Agent</SelectItem>
+                      <SelectItem value="buyer">Buyer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${u.email}?`)) delMut.mutate(u.id); }}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add user</DialogTitle></DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}
+          >
+            <div><Label>Full name</Label><Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required /></div>
+            <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></div>
+            <div><Label>Password (min 8)</Label><Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} /></div>
+            <div>
+              <Label>Role</Label>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as never })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="agent">Sales / Agent</SelectItem>
+                  <SelectItem value="buyer">Buyer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createMut.isPending}>{createMut.isPending ? "Creating…" : "Create"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ---------------- Site settings ---------------- */
+
+function SettingsAdmin() {
+  const qc = useQueryClient();
+  const { data: settings, isLoading } = useSiteSettings();
+  const [hero, setHero] = useState({
+    title_en: "", title_bn: "", subtitle_en: "", subtitle_bn: "",
+    image_url: "", badge_en: "", badge_bn: "",
+  });
+  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "" });
+
+  useEffect(() => {
+    if (settings?.hero) setHero({ ...hero, ...settings.hero });
+    if (settings?.brand) setBrand({ ...brand, ...settings.brand });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const { updateSiteSetting } = await import("@/lib/site-settings.functions");
+      await updateSiteSetting({ data: { key: "hero", value: hero } });
+      await updateSiteSetting({ data: { key: "brand", value: brand } });
+    },
+    onSuccess: () => {
+      toast.success("Site settings saved");
+      qc.invalidateQueries({ queryKey: ["site_settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <Skeleton className="mt-4 h-72 w-full" />;
+
+  return (
+    <div className="mt-4 space-y-6">
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Brand</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div><Label>Brand name (English)</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
+          <div><Label>Brand name (Bangla)</Label><Input value={brand.name_bn} onChange={(e) => setBrand({ ...brand, name_bn: e.target.value })} /></div>
+          <div className="sm:col-span-2">
+            <Label>Logo image URL</Label>
+            <Input value={brand.logo_url} onChange={(e) => setBrand({ ...brand, logo_url: e.target.value })} placeholder="https://..." />
+            {brand.logo_url && <img src={brand.logo_url} alt="logo preview" className="mt-2 h-12 w-12 rounded-md object-cover border" />}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Hero section</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Label>Background image URL</Label>
+            <Input value={hero.image_url} onChange={(e) => setHero({ ...hero, image_url: e.target.value })} placeholder="https://..." />
+            {hero.image_url && <img src={hero.image_url} alt="hero preview" className="mt-2 h-32 w-full rounded-md object-cover border" />}
+          </div>
+          <div><Label>Title (English)</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
+          <div><Label>Title (Bangla)</Label><Textarea rows={2} value={hero.title_bn} onChange={(e) => setHero({ ...hero, title_bn: e.target.value })} /></div>
+          <div><Label>Subtitle (English)</Label><Textarea rows={2} value={hero.subtitle_en} onChange={(e) => setHero({ ...hero, subtitle_en: e.target.value })} /></div>
+          <div><Label>Subtitle (Bangla)</Label><Textarea rows={2} value={hero.subtitle_bn} onChange={(e) => setHero({ ...hero, subtitle_bn: e.target.value })} /></div>
+          <div><Label>Badge (English)</Label><Input value={hero.badge_en} onChange={(e) => setHero({ ...hero, badge_en: e.target.value })} /></div>
+          <div><Label>Badge (Bangla)</Label><Input value={hero.badge_bn} onChange={(e) => setHero({ ...hero, badge_bn: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          {saveMut.isPending ? "Saving…" : "Save settings"}
+        </Button>
       </div>
     </div>
   );
