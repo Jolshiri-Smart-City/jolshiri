@@ -620,8 +620,166 @@ function LeadsAdmin() {
 function AttributesAdmin() {
   return (
     <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      <DevelopersManager />
       <ProjectsManager />
       <AmenitiesManager />
+      <FaqsManager />
+    </div>
+  );
+}
+
+function DevelopersManager() {
+  const qc = useQueryClient();
+  const devsQ = useQuery({
+    queryKey: ["admin", "developers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("developers")
+        .select("id, name, established_year, website, verified")
+        .order("name");
+      return (data ?? []) as Array<{ id: string; name: string; established_year: number | null; website: string | null; verified: boolean | null }>;
+    },
+  });
+  const [editing, setEditing] = useState<{ id?: string; name: string; established_year: string; website: string; verified: boolean }>({
+    name: "", established_year: "", website: "", verified: false,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      if (!editing.name.trim()) throw new Error("Name required");
+      const payload = {
+        name: editing.name.trim(),
+        established_year: editing.established_year ? Number(editing.established_year) : null,
+        website: editing.website.trim() || null,
+        verified: editing.verified,
+      };
+      if (editing.id) {
+        const { error } = await supabase.from("developers").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("developers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing.id ? "Updated" : "Added");
+      setEditing({ name: "", established_year: "", website: "", verified: false });
+      qc.invalidateQueries({ queryKey: ["admin", "developers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("developers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["admin", "developers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">Developers</h3>
+      <p className="text-xs text-muted-foreground">Companies that build the projects. Used when creating projects.</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Input placeholder="Name" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+        <Input placeholder="Established year" type="number" value={editing.established_year} onChange={(e) => setEditing({ ...editing, established_year: e.target.value })} />
+        <Input placeholder="https://website.com" value={editing.website} onChange={(e) => setEditing({ ...editing, website: e.target.value })} className="sm:col-span-2" />
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={editing.verified} onChange={(e) => setEditing({ ...editing, verified: e.target.checked })} /> Verified
+        </label>
+        <div className="flex justify-end gap-2">
+          {editing.id && (
+            <Button variant="outline" size="sm" onClick={() => setEditing({ name: "", established_year: "", website: "", verified: false })}>Cancel</Button>
+          )}
+          <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+            <Plus className="mr-1 h-4 w-4" />{editing.id ? "Update" : "Add"}
+          </Button>
+        </div>
+      </div>
+      <ul className="mt-3 divide-y divide-border/60 text-sm">
+        {(devsQ.data ?? []).map((d) => (
+          <li key={d.id} className="flex items-center justify-between py-2">
+            <div>
+              <div className="font-medium">{d.name} {d.verified && <span className="ml-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">VERIFIED</span>}</div>
+              <div className="text-xs text-muted-foreground">{d.established_year ?? "—"} · {d.website ?? "no website"}</div>
+            </div>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setEditing({
+                id: d.id, name: d.name, established_year: d.established_year?.toString() ?? "",
+                website: d.website ?? "", verified: !!d.verified,
+              })}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${d.name}?`)) delMut.mutate(d.id); }}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface FaqItem { q: string; a: string }
+
+function FaqsManager() {
+  const qc = useQueryClient();
+  const { data: settings } = useSiteSettings();
+  const [items, setItems] = useState<FaqItem[]>([]);
+
+  useEffect(() => {
+    const raw = (settings as { faqs?: FaqItem[] } | undefined)?.faqs;
+    if (Array.isArray(raw)) setItems(raw);
+  }, [settings]);
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const { updateSiteSetting } = await import("@/lib/site-settings.functions");
+      const clean = items.filter((f) => f.q.trim() && f.a.trim());
+      await updateSiteSetting({ data: { key: "faqs", value: { items: clean } as never } });
+    },
+    onSuccess: () => { toast.success("FAQs saved"); qc.invalidateQueries({ queryKey: ["site_settings"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Support both legacy array and {items: []} shape
+  useEffect(() => {
+    const raw = (settings as { faqs?: FaqItem[] | { items?: FaqItem[] } } | undefined)?.faqs;
+    if (raw && !Array.isArray(raw) && Array.isArray((raw as { items?: FaqItem[] }).items)) {
+      setItems((raw as { items: FaqItem[] }).items);
+    }
+  }, [settings]);
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">FAQs</h3>
+      <p className="text-xs text-muted-foreground">Shown on every property detail page above the default FAQs.</p>
+      <div className="mt-3 space-y-3">
+        {items.map((f, i) => (
+          <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">FAQ #{i + 1}</span>
+              <Button variant="ghost" size="icon" onClick={() => setItems(items.filter((_, idx) => idx !== i))}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+            <Input placeholder="Question" value={f.q} onChange={(e) => setItems(items.map((x, idx) => idx === i ? { ...x, q: e.target.value } : x))} />
+            <Textarea rows={2} placeholder="Answer" value={f.a} onChange={(e) => setItems(items.map((x, idx) => idx === i ? { ...x, a: e.target.value } : x))} />
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">No custom FAQs yet.</p>}
+      </div>
+      <div className="mt-3 flex justify-between">
+        <Button variant="outline" size="sm" onClick={() => setItems([...items, { q: "", a: "" }])}>
+          <Plus className="mr-1 h-4 w-4" />Add FAQ
+        </Button>
+        <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          {saveMut.isPending ? "Saving…" : "Save FAQs"}
+        </Button>
+      </div>
     </div>
   );
 }
