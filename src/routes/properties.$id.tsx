@@ -73,9 +73,25 @@ function PropertyDetailPage() {
   const { data } = useSuspenseQuery(propOptions(id));
   const { data: settings } = useSiteSettings();
   const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [compareIds, setCompareIdsLocal] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sync = () => setCompareIdsLocal(getCompareIds());
+    sync();
+    window.addEventListener("jolshiri:compare-change", sync);
+    return () => window.removeEventListener("jolshiri:compare-change", sync);
+  }, []);
+
+  const similarQ = useQuery({
+    queryKey: ["similar", id],
+    queryFn: () => similarProperties({ data: { id, sector: data!.project.sector, bedrooms: data!.bedrooms } }),
+    enabled: !!data,
+  });
 
   if (!data) return null;
   const waPhone = (settings?.brand as { whatsapp?: string } | undefined)?.whatsapp;
+  const isCompared = compareIds.includes(data.id);
 
   const photos = data.media.filter((m) => m.media_type === "photo");
   const floorPlans = data.media.filter((m) => m.media_type === "floor_plan");
