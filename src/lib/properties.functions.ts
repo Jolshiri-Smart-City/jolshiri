@@ -110,11 +110,13 @@ export const getProperty = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!prop) return null;
-    const mapped: PropertyDetail = {
-      ...(prop as unknown as PropertyDetail),
-      amenities: ((prop as { property_amenities: Array<{ amenities: { id: string; name: string } }> })
-        .property_amenities ?? []).map((pa) => pa.amenities),
+    const raw = prop as unknown as PropertyDetail & {
+      property_amenities?: Array<{ amenities: { id: string; name: string } | { id: string; name: string }[] }>;
     };
+    const amenities = (raw.property_amenities ?? []).flatMap((pa) =>
+      Array.isArray(pa.amenities) ? pa.amenities : [pa.amenities],
+    );
+    const mapped: PropertyDetail = { ...raw, amenities };
     mapped.media = (mapped.media ?? []).sort((a, b) => a.display_order - b.display_order);
     return mapped;
   });
