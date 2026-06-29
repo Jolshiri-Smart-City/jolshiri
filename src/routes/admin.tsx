@@ -410,10 +410,7 @@ function ListingDialog({
           if (error) throw error;
         }
       }
-          const { error } = await supabase.from("property_amenities").insert(rows);
-          if (error) throw error;
-        }
-      }
+
     },
     onSuccess: () => {
       toast.success(isEdit ? "Saved" : "Created");
