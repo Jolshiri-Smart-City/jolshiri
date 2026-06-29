@@ -85,6 +85,8 @@ function AdminPage() {
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           {isAdmin && <TabsTrigger value="activity">Activity</TabsTrigger>}
           {isAdmin && <TabsTrigger value="settings">Site settings</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="about">About page</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="contact">Contact page</TabsTrigger>}
         </TabsList>
         {isAdmin && <TabsContent value="dashboard"><DashboardStats /></TabsContent>}
         <TabsContent value="leads"><LeadKanban /></TabsContent>
@@ -93,6 +95,8 @@ function AdminPage() {
         {isAdmin && <TabsContent value="users"><UsersAdmin /></TabsContent>}
         {isAdmin && <TabsContent value="activity"><AuditLogViewer /></TabsContent>}
         {isAdmin && <TabsContent value="settings"><SettingsAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="about"><AboutAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="contact"><ContactAdmin /></TabsContent>}
       </Tabs>
     </div>
   );
