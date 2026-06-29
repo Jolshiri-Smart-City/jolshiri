@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 import type { PropertyStatus } from "@/lib/types";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { SingleImageUploader, PhotoUploader, type MediaItem } from "@/components/ImageUploader";
+import { DashboardStats } from "@/components/admin/DashboardStats";
+import { LeadKanban } from "@/components/admin/LeadKanban";
+import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · Jolshiri" }] }),
@@ -73,18 +76,22 @@ function AdminPage() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="font-display text-2xl font-semibold sm:text-3xl">{t("admin")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">Manage listings, leads, attributes and site settings.</p>
-      <Tabs defaultValue="listings" className="mt-6">
+      <Tabs defaultValue={isAdmin ? "dashboard" : "leads"} className="mt-6">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="listings">Listings</TabsTrigger>
+          {isAdmin && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
           <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="listings">Listings</TabsTrigger>
           {isAdmin && <TabsTrigger value="attributes">Attributes</TabsTrigger>}
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="activity">Activity</TabsTrigger>}
           {isAdmin && <TabsTrigger value="settings">Site settings</TabsTrigger>}
         </TabsList>
+        {isAdmin && <TabsContent value="dashboard"><DashboardStats /></TabsContent>}
+        <TabsContent value="leads"><LeadKanban /></TabsContent>
         <TabsContent value="listings"><ListingsAdmin /></TabsContent>
-        <TabsContent value="leads"><LeadsAdmin /></TabsContent>
         {isAdmin && <TabsContent value="attributes"><AttributesAdmin /></TabsContent>}
         {isAdmin && <TabsContent value="users"><UsersAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="activity"><AuditLogViewer /></TabsContent>}
         {isAdmin && <TabsContent value="settings"><SettingsAdmin /></TabsContent>}
       </Tabs>
     </div>
