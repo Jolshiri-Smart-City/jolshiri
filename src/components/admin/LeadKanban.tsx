@@ -291,3 +291,27 @@ function LeadDrawer({
     </Sheet>
   );
 }
+
+function exportLeadsCsv(rows: LeadRow[]) {
+  const headers = ["created_at", "full_name", "phone", "email", "status", "request_type", "message", "property_id", "assigned_to"];
+  const escape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push([
+      r.created_at, r.full_name, r.phone, r.email ?? "", r.status,
+      r.request_type ?? "", r.message ?? "", r.property_id ?? "", r.assigned_to ?? "",
+    ].map(escape).join(","));
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `jolshiri-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
