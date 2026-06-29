@@ -1,20 +1,27 @@
-## Problem
+I’ll make the project safer for Vercel deployment and fix the visible homepage hydration mismatch.
 
-The 10 demo listings are still in the database, but the homepage and `/properties` show none. Cause: the security migration restricted `developers` SELECT to admins/agents. `property_listing_view` joins `developers`, so anonymous visitors now read 0 rows from the view.
+Plan:
 
-## Fix
+1. **Fix the homepage hydration mismatch**
+   - The server renders the default hero badge, then the browser replaces it with editable backend settings, causing React hydration errors.
+   - Load site settings consistently for SSR/client, or delay editable hero text rendering until both sides match.
+   - This will remove the `Purbachal · 48,000+ flats` vs `Purbachal · 48,000+ flats coming online` mismatch.
 
-Restore public reads of developer **name only** (no contact info leaks) so listings re-appear without undoing the security hardening.
+2. **Prepare the app for Vercel hosting**
+   - Update the build configuration so TanStack Start/Nitro targets Vercel instead of the current Lovable hosting target.
+   - Keep the existing Lovable preview behavior as safe as possible while making GitHub/Vercel builds compatible.
 
-Migration:
-1. Create a minimal `public.developers_public` view exposing only `id, name` (no email/phone/address), with `security_invoker=on`.
-2. `GRANT SELECT` on `developers_public` to `anon, authenticated`.
-3. Recreate `property_listing_view` to join `developers_public` instead of `developers`. Column shape (`developer_name`) stays identical, so no frontend changes.
-4. Leave the locked-down `developers` table policy untouched — admin/agent CRUD in the admin panel keeps working; contacts stay private.
+3. **Harden runtime environment handling**
+   - Make backend/public database environment variable errors show a clear app error instead of an opaque `500`.
+   - Confirm the required Vercel environment variables are documented in the repo for deployment.
 
-## Verification
+4. **Add missing favicon asset**
+   - The Vercel log also shows `/favicon.ico` and `/favicon.png` 404s.
+   - Add/adjust public favicon files so those requests stop failing.
 
-- Reload `/` and `/properties` — featured + listing grids re-populate with the 10 demo units.
-- Confirm `developers` table still returns 0 rows for anon (contacts remain protected).
+5. **Validate locally after changes**
+   - Run the relevant checks/build validation in the app environment.
+   - Verify the homepage renders without hydration mismatch.
 
-No frontend code changes required.
+Important note:
+- If Vercel is missing the required environment variables, the site can still show `500` even after code changes. After this fix, you’ll need to add the same backend/public keys in **Vercel → Project Settings → Environment Variables**.
