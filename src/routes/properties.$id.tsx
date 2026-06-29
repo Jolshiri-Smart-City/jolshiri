@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
 import { EmiCalculator } from "@/components/EmiCalculator";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { PropertyCard } from "@/components/PropertyCard";
+import { ShareButton } from "@/components/ShareButton";
+import { PropertyFAQ, buildPropertyFaqs } from "@/components/PropertyFAQ";
+import { StickyMobileBar } from "@/components/StickyMobileBar";
+import { LeadDialog } from "@/components/LeadDialog";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { getCompareIds, toggleCompare } from "./compare";
 
