@@ -990,17 +990,16 @@ function UsersAdmin() {
               <tr><td colSpan={4} className="p-4"><Skeleton className="h-20 w-full" /></td></tr>
             ) : (usersQ.data ?? []).map((u) => (
               <tr key={u.id} className="border-t border-border/60">
-                <td className="px-3 py-2 font-medium">{u.full_name ?? "—"}</td>
+                <td className="px-3 py-2 font-medium">
+                  <div>{u.full_name ?? "—"}</div>
+                  <RoleBadge role={u.role} />
+                </td>
                 <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
                 <td className="px-3 py-2">
-                  <Select value={u.role} onValueChange={(v) => roleMut.mutate({ id: u.id, role: v as never })}>
-                    <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="agent">Sales / Agent</SelectItem>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <RoleCheckboxes
+                    value={u.role as "admin" | "agent" | "buyer"}
+                    onChange={(role) => roleMut.mutate({ id: u.id, role })}
+                  />
                 </td>
                 <td className="px-3 py-2 text-right">
                   <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${u.email}?`)) delMut.mutate(u.id); }}>
