@@ -1121,6 +1121,7 @@ function SettingsAdmin() {
     head_html: "",
     body_html: "",
   });
+  const [footer, setFooter] = useState({ copyright: "" });
 
   useEffect(() => {
     if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
@@ -1138,6 +1139,7 @@ function SettingsAdmin() {
       setTestimonials((tRaw as { items: typeof testimonials }).items);
     }
     if (settings?.seo) setSeo((s) => ({ ...s, ...settings.seo }));
+    if (settings?.footer) setFooter((f) => ({ ...f, ...settings.footer }));
   }, [settings]);
 
   const saveMut = useMutation({
@@ -1148,6 +1150,7 @@ function SettingsAdmin() {
       await updateSiteSetting({ data: { key: "why", value: why } });
       await updateSiteSetting({ data: { key: "testimonials", value: { items: testimonials } as never } });
       await updateSiteSetting({ data: { key: "seo", value: seo } });
+      await updateSiteSetting({ data: { key: "footer", value: footer } });
     },
     onSuccess: () => {
       toast.success("Site settings saved");
@@ -1185,6 +1188,22 @@ function SettingsAdmin() {
           <div><Label>Twitter / X URL</Label><Input value={brand.twitter} onChange={(e) => setBrand({ ...brand, twitter: e.target.value })} /></div>
         </div>
       </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Footer</h3>
+        <p className="text-xs text-muted-foreground">
+          Bottom copyright line. Use <code>{"{year}"}</code> and <code>{"{brand}"}</code> as placeholders.
+        </p>
+        <div className="mt-3">
+          <Label>Copyright text</Label>
+          <Input
+            placeholder="© {year} {brand} · Purbachal, Dhaka"
+            value={footer.copyright}
+            onChange={(e) => setFooter({ ...footer, copyright: e.target.value })}
+          />
+        </div>
+      </div>
+
 
       <div className="rounded-lg border border-border/70 bg-card p-4">
         <h3 className="font-display text-lg font-semibold">Hero section</h3>

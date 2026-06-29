@@ -68,6 +68,9 @@ export interface ContactSettings {
   note?: string;
   map_embed_url?: string;
 }
+export interface FooterSettings {
+  copyright?: string;
+}
 
 export function useSiteSettings() {
   return useQuery({
@@ -86,6 +89,7 @@ export function useSiteSettings() {
         seo: (map.seo ?? null) as SeoSettings | null,
         about: (map.about ?? null) as AboutSettings | null,
         contact: (map.contact ?? null) as ContactSettings | null,
+        footer: (map.footer ?? null) as FooterSettings | null,
       };
     },
   });
