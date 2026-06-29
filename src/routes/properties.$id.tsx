@@ -164,16 +164,18 @@ function PropertyDetailPage() {
             <div className="text-xs text-muted-foreground">৳{Math.round(Number(data.price_per_sqft)).toLocaleString()} / {t("sqft")}</div>
           ) : null}
           <StatusBadge status={data.status} />
-          <Button
-            type="button"
-            variant={isCompared ? "default" : "outline"}
-            size="sm"
-            className="mt-2"
-            onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
-          >
-            {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
-            {isCompared ? "In compare" : "Compare"}
-          </Button>
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <ShareButton title={`${data.project.name} · Unit ${data.unit_number}`} />
+            <Button
+              type="button"
+              variant={isCompared ? "default" : "outline"}
+              size="sm"
+              onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
+            >
+              {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
+              {isCompared ? "In compare" : "Compare"}
+            </Button>
+          </div>
         </div>
       </div>
 
