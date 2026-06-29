@@ -1,0 +1,1 @@
+ALTER VIEW public.property_listing_view SET (security_invoker = on);
