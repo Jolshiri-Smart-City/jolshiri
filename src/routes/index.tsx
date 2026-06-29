@@ -87,13 +87,22 @@ function Index() {
 
       {/* Why us */}
       <section className="mx-auto max-w-7xl px-4 py-16">
-        <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">{t("whyUs")}</h2>
+        <h2 className="font-display text-2xl font-semibold text-foreground sm:text-3xl">
+          {settings?.why?.[lang === "bn" ? "heading_bn" : "heading_en"] || t("whyUs")}
+        </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
-          {[
-            { icon: BadgeCheck, title: t("why1Title"), body: t("why1Body") },
-            { icon: Filter, title: t("why2Title"), body: t("why2Body") },
-            { icon: Globe2, title: t("why3Title"), body: t("why3Body") },
-          ].map((c) => (
+          {(settings?.why?.items && settings.why.items.length > 0
+            ? settings.why.items.map((it) => ({
+                icon: BadgeCheck,
+                title: lang === "bn" ? it.title_bn : it.title_en,
+                body: lang === "bn" ? it.body_bn : it.body_en,
+              }))
+            : [
+                { icon: BadgeCheck, title: t("why1Title"), body: t("why1Body") },
+                { icon: Filter, title: t("why2Title"), body: t("why2Body") },
+                { icon: Globe2, title: t("why3Title"), body: t("why3Body") },
+              ]
+          ).map((c) => (
             <div key={c.title} className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
               <c.icon className="h-6 w-6 text-primary" />
               <h3 className="mt-3 font-display text-lg font-semibold">{c.title}</h3>
@@ -119,7 +128,12 @@ function Index() {
       </section>
 
       <Testimonials
-        items={(settings as { testimonials?: Array<{ name: string; role?: string; text: string; rating?: number }> } | undefined)?.testimonials}
+        items={(() => {
+          const raw = settings?.testimonials;
+          if (Array.isArray(raw)) return raw;
+          if (raw && Array.isArray((raw as { items?: unknown[] }).items)) return (raw as { items: Array<{ name: string; role?: string; text: string; rating?: number }> }).items;
+          return undefined;
+        })()}
       />
     </div>
   );

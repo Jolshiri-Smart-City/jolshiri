@@ -22,9 +22,12 @@ export function Header() {
     : t("brand");
   const logoUrl = settings?.brand?.logo_url || jolshiriLogo;
 
-  const nav = [
-    { to: "/", label: brandName, exact: true, hideLabel: true },
+  const nav: Array<{ to: string; label: string; exact?: boolean }> = [
+    { to: "/", label: t("home"), exact: true },
     { to: "/properties", label: t("properties") },
+    { to: "/compare", label: t("compare") },
+    { to: "/about", label: t("about") },
+    { to: "/contact", label: t("contact") },
   ];
 
   return (
@@ -32,12 +35,11 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold text-primary">
           <img src={logoUrl} alt={brandName} className="h-9 w-9 rounded-md object-contain" />
-
           <span className="hidden sm:inline">{brandName}</span>
         </Link>
 
         <nav className="ml-4 hidden items-center gap-1 md:flex">
-          {nav.filter((n) => !n.hideLabel).map((n) => {
+          {nav.map((n) => {
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
             return (
               <Link
@@ -104,7 +106,7 @@ export function Header() {
       {open ? (
         <div className="border-t border-border/60 bg-background md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col px-4 py-2">
-            {nav.filter((n) => !n.hideLabel).map((n) => (
+            {nav.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}

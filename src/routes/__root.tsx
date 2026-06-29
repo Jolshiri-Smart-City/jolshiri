@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "@/lib/i18n";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -115,9 +116,7 @@ function RootComponent() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Jolshiri Smart City · Purbachal, Dhaka
-          </footer>
+          <Footer />
         </div>
         <Toaster richColors position="top-right" />
       </I18nProvider>

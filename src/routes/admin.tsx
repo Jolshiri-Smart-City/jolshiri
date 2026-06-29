@@ -1087,11 +1087,34 @@ function SettingsAdmin() {
     title_en: "", title_bn: "", subtitle_en: "", subtitle_bn: "",
     image_url: "", badge_en: "", badge_bn: "",
   });
-  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "", whatsapp: "" });
+  const [brand, setBrand] = useState({
+    name_en: "", name_bn: "", logo_url: "",
+    whatsapp: "", phone: "", email: "",
+    address_en: "", address_bn: "",
+    facebook: "", instagram: "", youtube: "", linkedin: "", twitter: "",
+  });
+  const [why, setWhy] = useState<{ heading_en: string; heading_bn: string; items: Array<{ title_en: string; title_bn: string; body_en: string; body_bn: string }> }>({
+    heading_en: "Why Jolshiri",
+    heading_bn: "কেন জলশিরি",
+    items: [],
+  });
+  const [testimonials, setTestimonials] = useState<Array<{ name: string; role?: string; text: string; rating?: number }>>([]);
 
   useEffect(() => {
     if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
     if (settings?.brand) setBrand((b) => ({ ...b, ...(settings.brand as typeof b) }));
+    if (settings?.why) {
+      setWhy((w) => ({
+        heading_en: settings.why?.heading_en ?? w.heading_en,
+        heading_bn: settings.why?.heading_bn ?? w.heading_bn,
+        items: settings.why?.items ?? [],
+      }));
+    }
+    const tRaw = settings?.testimonials;
+    if (Array.isArray(tRaw)) setTestimonials(tRaw);
+    else if (tRaw && Array.isArray((tRaw as { items?: unknown[] }).items)) {
+      setTestimonials((tRaw as { items: typeof testimonials }).items);
+    }
   }, [settings]);
 
   const saveMut = useMutation({
@@ -1099,6 +1122,8 @@ function SettingsAdmin() {
       const { updateSiteSetting } = await import("@/lib/site-settings.functions");
       await updateSiteSetting({ data: { key: "hero", value: hero } });
       await updateSiteSetting({ data: { key: "brand", value: brand } });
+      await updateSiteSetting({ data: { key: "why", value: why } });
+      await updateSiteSetting({ data: { key: "testimonials", value: { items: testimonials } as never } });
     },
     onSuccess: () => {
       toast.success("Site settings saved");
@@ -1116,21 +1141,26 @@ function SettingsAdmin() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div><Label>Brand name (English)</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
           <div><Label>Brand name (Bangla)</Label><Input value={brand.name_bn} onChange={(e) => setBrand({ ...brand, name_bn: e.target.value })} /></div>
-          <div>
-            <Label>WhatsApp number (with country code)</Label>
-            <Input placeholder="+8801XXXXXXXXX" value={brand.whatsapp} onChange={(e) => setBrand({ ...brand, whatsapp: e.target.value })} />
-            <p className="mt-1 text-xs text-muted-foreground">Shown as the floating WhatsApp button on listing pages.</p>
-          </div>
           <div className="sm:col-span-2">
-            <SingleImageUploader
-              bucket="branding"
-              value={brand.logo_url}
-              onChange={(url) => setBrand({ ...brand, logo_url: url })}
-              label="Logo"
-              aspect="square"
-              prefix="logo-"
-            />
+            <SingleImageUploader bucket="branding" value={brand.logo_url} onChange={(url) => setBrand({ ...brand, logo_url: url })} label="Logo" aspect="square" prefix="logo-" />
           </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Contact & social</h3>
+        <p className="text-xs text-muted-foreground">Shown in the site footer and on the Contact page.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div><Label>Phone</Label><Input placeholder="+8801XXXXXXXXX" value={brand.phone} onChange={(e) => setBrand({ ...brand, phone: e.target.value })} /></div>
+          <div><Label>WhatsApp</Label><Input placeholder="+8801XXXXXXXXX" value={brand.whatsapp} onChange={(e) => setBrand({ ...brand, whatsapp: e.target.value })} /></div>
+          <div><Label>Email</Label><Input type="email" value={brand.email} onChange={(e) => setBrand({ ...brand, email: e.target.value })} /></div>
+          <div><Label>Address (English)</Label><Input value={brand.address_en} onChange={(e) => setBrand({ ...brand, address_en: e.target.value })} /></div>
+          <div><Label>Address (Bangla)</Label><Input value={brand.address_bn} onChange={(e) => setBrand({ ...brand, address_bn: e.target.value })} /></div>
+          <div><Label>Facebook URL</Label><Input value={brand.facebook} onChange={(e) => setBrand({ ...brand, facebook: e.target.value })} /></div>
+          <div><Label>Instagram URL</Label><Input value={brand.instagram} onChange={(e) => setBrand({ ...brand, instagram: e.target.value })} /></div>
+          <div><Label>YouTube URL</Label><Input value={brand.youtube} onChange={(e) => setBrand({ ...brand, youtube: e.target.value })} /></div>
+          <div><Label>LinkedIn URL</Label><Input value={brand.linkedin} onChange={(e) => setBrand({ ...brand, linkedin: e.target.value })} /></div>
+          <div><Label>Twitter / X URL</Label><Input value={brand.twitter} onChange={(e) => setBrand({ ...brand, twitter: e.target.value })} /></div>
         </div>
       </div>
 
@@ -1138,14 +1168,7 @@ function SettingsAdmin() {
         <h3 className="font-display text-lg font-semibold">Hero section</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <SingleImageUploader
-              bucket="branding"
-              value={hero.image_url}
-              onChange={(url) => setHero({ ...hero, image_url: url })}
-              label="Background image"
-              aspect="video"
-              prefix="hero-"
-            />
+            <SingleImageUploader bucket="branding" value={hero.image_url} onChange={(url) => setHero({ ...hero, image_url: url })} label="Background image" aspect="video" prefix="hero-" />
           </div>
           <div><Label>Title (English)</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
           <div><Label>Title (Bangla)</Label><Textarea rows={2} value={hero.title_bn} onChange={(e) => setHero({ ...hero, title_bn: e.target.value })} /></div>
@@ -1156,11 +1179,75 @@ function SettingsAdmin() {
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-          {saveMut.isPending ? "Saving…" : "Save settings"}
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Why Jolshiri</h3>
+        <p className="text-xs text-muted-foreground">Three cards shown on the home page. Leave empty to use defaults.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div><Label>Heading (English)</Label><Input value={why.heading_en} onChange={(e) => setWhy({ ...why, heading_en: e.target.value })} /></div>
+          <div><Label>Heading (Bangla)</Label><Input value={why.heading_bn} onChange={(e) => setWhy({ ...why, heading_bn: e.target.value })} /></div>
+        </div>
+        <div className="mt-4 space-y-3">
+          {why.items.map((it, i) => (
+            <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Card #{i + 1}</span>
+                <Button variant="ghost" size="icon" onClick={() => setWhy({ ...why, items: why.items.filter((_, idx) => idx !== i) })}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input placeholder="Title (English)" value={it.title_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, title_en: e.target.value } : x) })} />
+                <Input placeholder="Title (Bangla)" value={it.title_bn} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, title_bn: e.target.value } : x) })} />
+                <Textarea rows={2} placeholder="Body (English)" value={it.body_en} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, body_en: e.target.value } : x) })} />
+                <Textarea rows={2} placeholder="Body (Bangla)" value={it.body_bn} onChange={(e) => setWhy({ ...why, items: why.items.map((x, idx) => idx === i ? { ...x, body_bn: e.target.value } : x) })} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => setWhy({ ...why, items: [...why.items, { title_en: "", title_bn: "", body_en: "", body_bn: "" }] })}>
+            <Plus className="mr-1 h-4 w-4" />Add card
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">What buyers say</h3>
+        <p className="text-xs text-muted-foreground">Testimonials shown on the home page.</p>
+        <div className="mt-3 space-y-3">
+          {testimonials.map((it, i) => (
+            <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Testimonial #{i + 1}</span>
+                <Button variant="ghost" size="icon" onClick={() => setTestimonials(testimonials.filter((_, idx) => idx !== i))}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input placeholder="Name" value={it.name} onChange={(e) => setTestimonials(testimonials.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))} />
+                <Input placeholder="Role (e.g. Bought a 3-BHK)" value={it.role ?? ""} onChange={(e) => setTestimonials(testimonials.map((x, idx) => idx === i ? { ...x, role: e.target.value } : x))} />
+              </div>
+              <Textarea rows={3} placeholder="Quote" value={it.text} onChange={(e) => setTestimonials(testimonials.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))} />
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Rating (1–5)</Label>
+                <Input type="number" min={1} max={5} className="w-24" value={it.rating ?? 5} onChange={(e) => setTestimonials(testimonials.map((x, idx) => idx === i ? { ...x, rating: Number(e.target.value) || undefined } : x))} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => setTestimonials([...testimonials, { name: "", role: "", text: "", rating: 5 }])}>
+            <Plus className="mr-1 h-4 w-4" />Add testimonial
+          </Button>
+        </div>
+      </div>
+
+      <div className="sticky bottom-4 flex justify-end">
+        <Button size="lg" onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="shadow-lg">
+          {saveMut.isPending ? "Saving…" : "Save all settings"}
         </Button>
       </div>
     </div>
   );
 }
+

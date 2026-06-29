@@ -144,7 +144,7 @@ function PropertyDetailPage() {
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            {data.project.developer.name} · {data.project.name}
+            {data.project.name}
           </div>
           <h1 className="font-display text-2xl font-semibold sm:text-3xl">
             {t("unit")} {data.unit_number}
@@ -315,7 +315,7 @@ function PropertyDetailPage() {
       />
       <WhatsAppFab
         phone={waPhone}
-        message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
+        message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}.`}
       />
       <StickyMobileBar
         onInquire={() => setInquireOpen(true)}
