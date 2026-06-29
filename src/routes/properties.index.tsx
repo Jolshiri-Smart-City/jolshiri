@@ -39,7 +39,7 @@ function parseNumber(v: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-export const Route = createFileRoute("/properties")({
+export const Route = createFileRoute("/properties/")({
   head: () => ({
     meta: [
       { title: "Browse properties — Jolshiri Smart City" },
@@ -74,7 +74,7 @@ export const Route = createFileRoute("/properties")({
 
 function PropertiesPage() {
   const { t, lang } = useI18n();
-  const navigate = useNavigate({ from: "/properties" });
+  const navigate = useNavigate({ from: "/properties/" });
   const search = Route.useSearch();
 
   const sectorsQ = useQuery({ queryKey: ["sectors"], queryFn: () => listSectors() });
@@ -230,15 +230,6 @@ function PropertiesPage() {
             </Select>
           </div>
 
-          <div>
-            <Label className="text-xs uppercase text-muted-foreground">{t("possessionBy")}</Label>
-            <Input
-              type="date"
-              value={search.possessionBefore ?? ""}
-              onChange={(e) => update("possessionBefore", e.target.value || undefined)}
-              className="mt-1"
-            />
-          </div>
 
           <div>
             <Label className="text-xs uppercase text-muted-foreground">{t("amenities")}</Label>

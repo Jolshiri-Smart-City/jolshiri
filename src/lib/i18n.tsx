@@ -85,6 +85,13 @@ const DICT = {
   why3Title: { en: "Bangla + English", bn: "বাংলা + ইংরেজি" },
   why3Body: { en: "Built for Bangladeshi buyers, NRBs and investors alike.", bn: "বাংলাদেশি ক্রেতা, এনআরবি ও বিনিয়োগকারীদের জন্য।" },
   language: { en: "Language", bn: "ভাষা" },
+  inquire: { en: "Inquire", bn: "যোগাযোগ" },
+  viewDetails: { en: "View details", bn: "বিস্তারিত" },
+  inquireAbout: { en: "Inquire about", bn: "জিজ্ঞাসা" },
+  requestType: { en: "Request type", bn: "অনুরোধের ধরন" },
+  callback: { en: "Callback", bn: "কলব্যাক" },
+  siteVisit: { en: "Site visit", bn: "সাইট ভিজিট" },
+  booking: { en: "Booking", bn: "বুকিং" },
 };
 
 type Key = keyof typeof DICT;
