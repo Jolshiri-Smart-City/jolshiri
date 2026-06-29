@@ -635,13 +635,13 @@ function DevelopersManager() {
     queryFn: async () => {
       const { data } = await supabase
         .from("developers")
-        .select("id, name, established_year, website, verified")
+        .select("id, name, contact_phone, contact_email, logo_url, verified, is_active")
         .order("name");
-      return (data ?? []) as Array<{ id: string; name: string; established_year: number | null; website: string | null; verified: boolean | null }>;
+      return (data ?? []) as Array<{ id: string; name: string; contact_phone: string | null; contact_email: string | null; logo_url: string | null; verified: boolean | null; is_active: boolean | null }>;
     },
   });
-  const [editing, setEditing] = useState<{ id?: string; name: string; established_year: string; website: string; verified: boolean }>({
-    name: "", established_year: "", website: "", verified: false,
+  const [editing, setEditing] = useState<{ id?: string; name: string; contact_phone: string; contact_email: string; logo_url: string; verified: boolean; is_active: boolean }>({
+    name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true,
   });
 
   const saveMut = useMutation({
@@ -649,9 +649,11 @@ function DevelopersManager() {
       if (!editing.name.trim()) throw new Error("Name required");
       const payload = {
         name: editing.name.trim(),
-        established_year: editing.established_year ? Number(editing.established_year) : null,
-        website: editing.website.trim() || null,
+        contact_phone: editing.contact_phone.trim() || null,
+        contact_email: editing.contact_email.trim() || null,
+        logo_url: editing.logo_url.trim() || null,
         verified: editing.verified,
+        is_active: editing.is_active,
       };
       if (editing.id) {
         const { error } = await supabase.from("developers").update(payload).eq("id", editing.id);
@@ -663,7 +665,7 @@ function DevelopersManager() {
     },
     onSuccess: () => {
       toast.success(editing.id ? "Updated" : "Added");
-      setEditing({ name: "", established_year: "", website: "", verified: false });
+      setEditing({ name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true });
       qc.invalidateQueries({ queryKey: ["admin", "developers"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -684,14 +686,18 @@ function DevelopersManager() {
       <p className="text-xs text-muted-foreground">Companies that build the projects. Used when creating projects.</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <Input placeholder="Name" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
-        <Input placeholder="Established year" type="number" value={editing.established_year} onChange={(e) => setEditing({ ...editing, established_year: e.target.value })} />
-        <Input placeholder="https://website.com" value={editing.website} onChange={(e) => setEditing({ ...editing, website: e.target.value })} className="sm:col-span-2" />
+        <Input placeholder="Contact phone" value={editing.contact_phone} onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })} />
+        <Input placeholder="Contact email" type="email" value={editing.contact_email} onChange={(e) => setEditing({ ...editing, contact_email: e.target.value })} />
+        <Input placeholder="Logo URL" value={editing.logo_url} onChange={(e) => setEditing({ ...editing, logo_url: e.target.value })} />
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={editing.verified} onChange={(e) => setEditing({ ...editing, verified: e.target.checked })} /> Verified
         </label>
-        <div className="flex justify-end gap-2">
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} /> Active
+        </label>
+        <div className="flex justify-end gap-2 sm:col-span-2">
           {editing.id && (
-            <Button variant="outline" size="sm" onClick={() => setEditing({ name: "", established_year: "", website: "", verified: false })}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={() => setEditing({ name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true })}>Cancel</Button>
           )}
           <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
             <Plus className="mr-1 h-4 w-4" />{editing.id ? "Update" : "Add"}
@@ -703,12 +709,12 @@ function DevelopersManager() {
           <li key={d.id} className="flex items-center justify-between py-2">
             <div>
               <div className="font-medium">{d.name} {d.verified && <span className="ml-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">VERIFIED</span>}</div>
-              <div className="text-xs text-muted-foreground">{d.established_year ?? "—"} · {d.website ?? "no website"}</div>
+              <div className="text-xs text-muted-foreground">{d.contact_phone ?? "—"} · {d.contact_email ?? "—"}</div>
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="icon" onClick={() => setEditing({
-                id: d.id, name: d.name, established_year: d.established_year?.toString() ?? "",
-                website: d.website ?? "", verified: !!d.verified,
+                id: d.id, name: d.name, contact_phone: d.contact_phone ?? "", contact_email: d.contact_email ?? "",
+                logo_url: d.logo_url ?? "", verified: !!d.verified, is_active: d.is_active ?? true,
               })}>
                 <Pencil className="h-4 w-4" />
               </Button>
