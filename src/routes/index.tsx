@@ -3,6 +3,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { ArrowRight, BadgeCheck, Filter, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/PropertyCard";
+import { Testimonials } from "@/components/Testimonials";
 import { featuredProperties } from "@/lib/properties.functions";
 import { useI18n } from "@/lib/i18n";
 import { useSiteSettings } from "@/hooks/use-site-settings";
