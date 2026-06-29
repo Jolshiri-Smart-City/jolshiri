@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Building2, Heart, ShieldCheck, LogIn, LogOut, Languages, Menu, X } from "lucide-react";
+import { Building2, ShieldCheck, LogOut, Languages, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -13,11 +13,11 @@ export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
 
+  const isStaff = role === "admin" || role === "agent";
+
   const nav = [
-    { to: "/", label: t("brand"), icon: Building2, exact: true, hideLabel: true },
-    { to: "/properties", label: t("properties"), icon: Building2 },
-    { to: "/favorites", label: t("favorites"), icon: Heart, auth: true },
-    { to: "/admin", label: t("admin"), icon: ShieldCheck, staff: true },
+    { to: "/", label: t("brand"), exact: true, hideLabel: true },
+    { to: "/properties", label: t("properties") },
   ];
 
   return (
@@ -30,8 +30,6 @@ export function Header() {
 
         <nav className="ml-4 hidden items-center gap-1 md:flex">
           {nav.filter((n) => !n.hideLabel).map((n) => {
-            if (n.auth && !user) return null;
-            if (n.staff && role !== "admin" && role !== "agent") return null;
             const active = n.exact ? pathname === n.to : pathname.startsWith(n.to);
             return (
               <Link
@@ -46,6 +44,17 @@ export function Header() {
               </Link>
             );
           })}
+          {isStaff ? (
+            <Link
+              to="/admin"
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+                pathname.startsWith("/admin") && "bg-secondary text-foreground",
+              )}
+            >
+              {t("admin")}
+            </Link>
+          ) : null}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -54,7 +63,7 @@ export function Header() {
             size="sm"
             onClick={() => setLang(lang === "en" ? "bn" : "en")}
             className="gap-1.5"
-            title={t("language")}
+            title="Language"
           >
             <Languages className="h-4 w-4" />
             <span className="text-xs font-semibold">{lang === "en" ? "বাংলা" : "EN"}</span>
@@ -71,10 +80,10 @@ export function Header() {
               {t("signOut")}
             </Button>
           ) : (
-            <Button asChild size="sm" className="hidden gap-1.5 sm:inline-flex">
+            <Button asChild variant="outline" size="sm" className="hidden gap-1.5 sm:inline-flex">
               <Link to="/auth">
-                <LogIn className="h-4 w-4" />
-                {t("signIn")}
+                <ShieldCheck className="h-4 w-4" />
+                Admin
               </Link>
             </Button>
           )}
@@ -87,20 +96,25 @@ export function Header() {
       {open ? (
         <div className="border-t border-border/60 bg-background md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col px-4 py-2">
-            {nav.filter((n) => !n.hideLabel).map((n) => {
-              if (n.auth && !user) return null;
-              if (n.staff && role !== "admin" && role !== "agent") return null;
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
+            {nav.filter((n) => !n.hideLabel).map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                onClick={() => setOpen(false)}
+                className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              >
+                {n.label}
+              </Link>
+            ))}
+            {isStaff ? (
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              >
+                {t("admin")}
+              </Link>
+            ) : null}
             {user ? (
               <button
                 onClick={() => {
@@ -117,7 +131,7 @@ export function Header() {
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
               >
-                {t("signIn")}
+                Admin sign in
               </Link>
             )}
           </div>
