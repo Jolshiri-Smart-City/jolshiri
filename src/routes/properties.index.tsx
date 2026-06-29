@@ -230,15 +230,6 @@ function PropertiesPage() {
             </Select>
           </div>
 
-          <div>
-            <Label className="text-xs uppercase text-muted-foreground">{t("possessionBy")}</Label>
-            <Input
-              type="date"
-              value={search.possessionBefore ?? ""}
-              onChange={(e) => update("possessionBefore", e.target.value || undefined)}
-              className="mt-1"
-            />
-          </div>
 
           <div>
             <Label className="text-xs uppercase text-muted-foreground">{t("amenities")}</Label>
