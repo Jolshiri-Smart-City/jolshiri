@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public can read developer names via view" ON public.developers;
