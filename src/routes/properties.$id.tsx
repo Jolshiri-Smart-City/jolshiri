@@ -31,17 +31,39 @@ export const Route = createFileRoute("/properties/$id")({
     if (!p) throw notFound();
     return p;
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
-          { name: "description", content: loaderData.description?.slice(0, 160) ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.` },
-          { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
-          { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
-          { property: "og:image", content: loaderData.media[0]?.url ?? "" },
-        ]
-      : [{ title: "Property — Jolshiri" }],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return { meta: [{ title: "Property — Jolshiri" }] };
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: `${loaderData.project.name} · Unit ${loaderData.unit_number}`,
+      description: loaderData.description ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.`,
+      image: loaderData.media.map((m) => m.url),
+      brand: { "@type": "Brand", name: loaderData.project.developer.name },
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "BDT",
+        price: Number(loaderData.price_total),
+        availability:
+          loaderData.status === "available"
+            ? "https://schema.org/InStock"
+            : loaderData.status === "booked"
+              ? "https://schema.org/LimitedAvailability"
+              : "https://schema.org/SoldOut",
+      },
+    };
+    return {
+      meta: [
+        { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
+        { name: "description", content: loaderData.description?.slice(0, 160) ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.` },
+        { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
+        { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
+        { property: "og:image", content: loaderData.media[0]?.url ?? "" },
+        { property: "og:type", content: "product" },
+      ],
+      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+    };
+  },
   component: PropertyDetailPage,
 });
 
