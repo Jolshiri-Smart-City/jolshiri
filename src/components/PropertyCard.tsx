@@ -71,7 +71,7 @@ export function PropertyCard({ row }: { row: ListingRow }) {
           </div>
         </div>
       </Link>
-      <div className="mt-auto flex gap-2 border-t border-border/60 p-3">
+      <div className="mt-auto flex flex-wrap gap-2 border-t border-border/60 p-3">
         <Button asChild variant="outline" size="sm" className="flex-1">
           <Link to="/properties/$id" params={{ id: row.id }}>{t("viewDetails") ?? "View details"}</Link>
         </Button>
@@ -83,6 +83,10 @@ export function PropertyCard({ row }: { row: ListingRow }) {
           <MessageSquare className="mr-1 h-3.5 w-3.5" />
           {t("inquire") ?? "Inquire"}
         </Button>
+        <ShareButton
+          title={`${row.project_name} · ${t("unit")} ${row.unit_number}`}
+          url={typeof window !== "undefined" ? `${window.location.origin}/properties/${row.id}` : `/properties/${row.id}`}
+        />
       </div>
       <LeadDialog
         open={open}
