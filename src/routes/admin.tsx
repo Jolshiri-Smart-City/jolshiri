@@ -18,6 +18,7 @@ import { useI18n, formatBDT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PropertyStatus } from "@/lib/types";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { SingleImageUploader, PhotoUploader, type MediaItem } from "@/components/ImageUploader";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · Jolshiri" }] }),
@@ -846,12 +847,11 @@ function SettingsAdmin() {
     title_en: "", title_bn: "", subtitle_en: "", subtitle_bn: "",
     image_url: "", badge_en: "", badge_bn: "",
   });
-  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "" });
+  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "", whatsapp: "" });
 
   useEffect(() => {
-    if (settings?.hero) setHero({ ...hero, ...settings.hero });
-    if (settings?.brand) setBrand({ ...brand, ...settings.brand });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
+    if (settings?.brand) setBrand((b) => ({ ...b, ...(settings.brand as typeof b) }));
   }, [settings]);
 
   const saveMut = useMutation({
@@ -876,10 +876,20 @@ function SettingsAdmin() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div><Label>Brand name (English)</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
           <div><Label>Brand name (Bangla)</Label><Input value={brand.name_bn} onChange={(e) => setBrand({ ...brand, name_bn: e.target.value })} /></div>
+          <div>
+            <Label>WhatsApp number (with country code)</Label>
+            <Input placeholder="+8801XXXXXXXXX" value={brand.whatsapp} onChange={(e) => setBrand({ ...brand, whatsapp: e.target.value })} />
+            <p className="mt-1 text-xs text-muted-foreground">Shown as the floating WhatsApp button on listing pages.</p>
+          </div>
           <div className="sm:col-span-2">
-            <Label>Logo image URL</Label>
-            <Input value={brand.logo_url} onChange={(e) => setBrand({ ...brand, logo_url: e.target.value })} placeholder="https://..." />
-            {brand.logo_url && <img src={brand.logo_url} alt="logo preview" className="mt-2 h-12 w-12 rounded-md object-cover border" />}
+            <SingleImageUploader
+              bucket="branding"
+              value={brand.logo_url}
+              onChange={(url) => setBrand({ ...brand, logo_url: url })}
+              label="Logo"
+              aspect="square"
+              prefix="logo-"
+            />
           </div>
         </div>
       </div>
@@ -888,9 +898,14 @@ function SettingsAdmin() {
         <h3 className="font-display text-lg font-semibold">Hero section</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Label>Background image URL</Label>
-            <Input value={hero.image_url} onChange={(e) => setHero({ ...hero, image_url: e.target.value })} placeholder="https://..." />
-            {hero.image_url && <img src={hero.image_url} alt="hero preview" className="mt-2 h-32 w-full rounded-md object-cover border" />}
+            <SingleImageUploader
+              bucket="branding"
+              value={hero.image_url}
+              onChange={(url) => setHero({ ...hero, image_url: url })}
+              label="Background image"
+              aspect="video"
+              prefix="hero-"
+            />
           </div>
           <div><Label>Title (English)</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
           <div><Label>Title (Bangla)</Label><Textarea rows={2} value={hero.title_bn} onChange={(e) => setHero({ ...hero, title_bn: e.target.value })} /></div>
