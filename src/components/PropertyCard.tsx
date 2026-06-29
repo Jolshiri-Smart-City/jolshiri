@@ -5,6 +5,7 @@ import { formatBDT, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LeadDialog } from "@/components/LeadDialog";
+import { ShareButton } from "@/components/ShareButton";
 import { useState } from "react";
 
 const FALLBACK = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1600&q=80";
