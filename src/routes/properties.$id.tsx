@@ -35,9 +35,17 @@ export const Route = createFileRoute("/properties/$id")({
     if (!p) throw notFound();
     return p;
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [{ title: "Property — Jolshiri" }] };
-    const jsonLd = {
+    const path = `/properties/${params.id}`;
+    const faqs = buildPropertyFaqs({
+      unit: loaderData.unit_number,
+      project: loaderData.project.name,
+      possession: loaderData.possession_date,
+      bookingMoney: loaderData.booking_money ? Number(loaderData.booking_money) : null,
+      ready: !!loaderData.is_ready_to_move,
+    });
+    const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: `${loaderData.project.name} · Unit ${loaderData.unit_number}`,
@@ -56,6 +64,24 @@ export const Route = createFileRoute("/properties/$id")({
               : "https://schema.org/SoldOut",
       },
     };
+    const faqLd = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+        { "@type": "ListItem", position: 2, name: "Properties", item: "/properties" },
+        { "@type": "ListItem", position: 3, name: `${loaderData.project.name} · ${loaderData.unit_number}`, item: path },
+      ],
+    };
     return {
       meta: [
         { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
@@ -63,9 +89,16 @@ export const Route = createFileRoute("/properties/$id")({
         { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
         { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
         { property: "og:image", content: loaderData.media[0]?.url ?? "" },
+        { property: "og:url", content: path },
         { property: "og:type", content: "product" },
+        { property: "twitter:image", content: loaderData.media[0]?.url ?? "" },
       ],
-      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+      links: [{ rel: "canonical", href: path }],
+      scripts: [
+        { type: "application/ld+json", children: JSON.stringify(productLd) },
+        { type: "application/ld+json", children: JSON.stringify(faqLd) },
+        { type: "application/ld+json", children: JSON.stringify(breadcrumbLd) },
+      ],
     };
   },
   component: PropertyDetailPage,
