@@ -74,7 +74,11 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {brandName} · Purbachal, Dhaka
+        {(settings?.footer?.copyright && settings.footer.copyright.trim())
+          ? settings.footer.copyright
+              .replace(/\{year\}/gi, String(new Date().getFullYear()))
+              .replace(/\{brand\}/gi, brandName)
+          : `© ${new Date().getFullYear()} ${brandName}${address ? " · " + address : ""}`}
       </div>
     </footer>
   );
