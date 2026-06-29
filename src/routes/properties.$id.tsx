@@ -285,6 +285,19 @@ function PropertyDetailPage() {
         </section>
       )}
 
+      <PropertyFAQ
+        faqs={buildPropertyFaqs({
+          unit: data.unit_number,
+          project: data.project.name,
+          possession: data.possession_date,
+          bookingMoney: data.booking_money ? Number(data.booking_money) : null,
+          ready: !!data.is_ready_to_move,
+        })}
+      />
+
+      {/* Spacer so sticky mobile bar doesn't cover content */}
+      <div className="h-20 lg:hidden" />
+
       <Lightbox
         open={lightboxOpen}
         close={() => setLightboxOpen(false)}
@@ -295,6 +308,18 @@ function PropertyDetailPage() {
       <WhatsAppFab
         phone={waPhone}
         message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
+      />
+      <StickyMobileBar
+        onInquire={() => setInquireOpen(true)}
+        phone={(settings?.brand as { phone?: string } | undefined)?.phone}
+        whatsapp={waPhone}
+        whatsappMessage={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}.`}
+      />
+      <LeadDialog
+        open={inquireOpen}
+        onOpenChange={setInquireOpen}
+        propertyId={data.id}
+        propertyLabel={`${data.project.name} · ${t("unit")} ${data.unit_number}`}
       />
     </div>
   );
