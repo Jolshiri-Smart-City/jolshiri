@@ -620,8 +620,172 @@ function LeadsAdmin() {
 function AttributesAdmin() {
   return (
     <div className="mt-4 grid gap-6 lg:grid-cols-2">
+      <DevelopersManager />
       <ProjectsManager />
       <AmenitiesManager />
+      <FaqsManager />
+    </div>
+  );
+}
+
+function DevelopersManager() {
+  const qc = useQueryClient();
+  const devsQ = useQuery({
+    queryKey: ["admin", "developers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("developers")
+        .select("id, name, contact_phone, contact_email, logo_url, verified, is_active")
+        .order("name");
+      return (data ?? []) as Array<{ id: string; name: string; contact_phone: string | null; contact_email: string | null; logo_url: string | null; verified: boolean | null; is_active: boolean | null }>;
+    },
+  });
+  const [editing, setEditing] = useState<{ id?: string; name: string; contact_phone: string; contact_email: string; logo_url: string; verified: boolean; is_active: boolean }>({
+    name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      if (!editing.name.trim()) throw new Error("Name required");
+      const payload = {
+        name: editing.name.trim(),
+        contact_phone: editing.contact_phone.trim() || null,
+        contact_email: editing.contact_email.trim() || null,
+        logo_url: editing.logo_url.trim() || null,
+        verified: editing.verified,
+        is_active: editing.is_active,
+      };
+      if (editing.id) {
+        const { error } = await supabase.from("developers").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("developers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editing.id ? "Updated" : "Added");
+      setEditing({ name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true });
+      qc.invalidateQueries({ queryKey: ["admin", "developers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const delMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("developers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["admin", "developers"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">Developers</h3>
+      <p className="text-xs text-muted-foreground">Companies that build the projects. Used when creating projects.</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Input placeholder="Name" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+        <Input placeholder="Contact phone" value={editing.contact_phone} onChange={(e) => setEditing({ ...editing, contact_phone: e.target.value })} />
+        <Input placeholder="Contact email" type="email" value={editing.contact_email} onChange={(e) => setEditing({ ...editing, contact_email: e.target.value })} />
+        <Input placeholder="Logo URL" value={editing.logo_url} onChange={(e) => setEditing({ ...editing, logo_url: e.target.value })} />
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={editing.verified} onChange={(e) => setEditing({ ...editing, verified: e.target.checked })} /> Verified
+        </label>
+        <label className="inline-flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} /> Active
+        </label>
+        <div className="flex justify-end gap-2 sm:col-span-2">
+          {editing.id && (
+            <Button variant="outline" size="sm" onClick={() => setEditing({ name: "", contact_phone: "", contact_email: "", logo_url: "", verified: false, is_active: true })}>Cancel</Button>
+          )}
+          <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+            <Plus className="mr-1 h-4 w-4" />{editing.id ? "Update" : "Add"}
+          </Button>
+        </div>
+      </div>
+      <ul className="mt-3 divide-y divide-border/60 text-sm">
+        {(devsQ.data ?? []).map((d) => (
+          <li key={d.id} className="flex items-center justify-between py-2">
+            <div>
+              <div className="font-medium">{d.name} {d.verified && <span className="ml-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">VERIFIED</span>}</div>
+              <div className="text-xs text-muted-foreground">{d.contact_phone ?? "—"} · {d.contact_email ?? "—"}</div>
+            </div>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setEditing({
+                id: d.id, name: d.name, contact_phone: d.contact_phone ?? "", contact_email: d.contact_email ?? "",
+                logo_url: d.logo_url ?? "", verified: !!d.verified, is_active: d.is_active ?? true,
+              })}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${d.name}?`)) delMut.mutate(d.id); }}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+interface FaqItem { q: string; a: string }
+
+function FaqsManager() {
+  const qc = useQueryClient();
+  const { data: settings } = useSiteSettings();
+  const [items, setItems] = useState<FaqItem[]>([]);
+
+  useEffect(() => {
+    const raw = (settings as { faqs?: FaqItem[] } | undefined)?.faqs;
+    if (Array.isArray(raw)) setItems(raw);
+  }, [settings]);
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const { updateSiteSetting } = await import("@/lib/site-settings.functions");
+      const clean = items.filter((f) => f.q.trim() && f.a.trim());
+      await updateSiteSetting({ data: { key: "faqs", value: { items: clean } as never } });
+    },
+    onSuccess: () => { toast.success("FAQs saved"); qc.invalidateQueries({ queryKey: ["site_settings"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Support both legacy array and {items: []} shape
+  useEffect(() => {
+    const raw = (settings as { faqs?: FaqItem[] | { items?: FaqItem[] } } | undefined)?.faqs;
+    if (raw && !Array.isArray(raw) && Array.isArray((raw as { items?: FaqItem[] }).items)) {
+      setItems((raw as { items: FaqItem[] }).items);
+    }
+  }, [settings]);
+
+  return (
+    <div className="rounded-lg border border-border/70 bg-card p-4">
+      <h3 className="font-display text-lg font-semibold">FAQs</h3>
+      <p className="text-xs text-muted-foreground">Shown on every property detail page above the default FAQs.</p>
+      <div className="mt-3 space-y-3">
+        {items.map((f, i) => (
+          <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">FAQ #{i + 1}</span>
+              <Button variant="ghost" size="icon" onClick={() => setItems(items.filter((_, idx) => idx !== i))}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+            <Input placeholder="Question" value={f.q} onChange={(e) => setItems(items.map((x, idx) => idx === i ? { ...x, q: e.target.value } : x))} />
+            <Textarea rows={2} placeholder="Answer" value={f.a} onChange={(e) => setItems(items.map((x, idx) => idx === i ? { ...x, a: e.target.value } : x))} />
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-xs text-muted-foreground">No custom FAQs yet.</p>}
+      </div>
+      <div className="mt-3 flex justify-between">
+        <Button variant="outline" size="sm" onClick={() => setItems([...items, { q: "", a: "" }])}>
+          <Plus className="mr-1 h-4 w-4" />Add FAQ
+        </Button>
+        <Button size="sm" onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          {saveMut.isPending ? "Saving…" : "Save FAQs"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -826,17 +990,16 @@ function UsersAdmin() {
               <tr><td colSpan={4} className="p-4"><Skeleton className="h-20 w-full" /></td></tr>
             ) : (usersQ.data ?? []).map((u) => (
               <tr key={u.id} className="border-t border-border/60">
-                <td className="px-3 py-2 font-medium">{u.full_name ?? "—"}</td>
+                <td className="px-3 py-2 font-medium">
+                  <div>{u.full_name ?? "—"}</div>
+                  <RoleBadge role={u.role} />
+                </td>
                 <td className="px-3 py-2 text-muted-foreground">{u.email}</td>
                 <td className="px-3 py-2">
-                  <Select value={u.role} onValueChange={(v) => roleMut.mutate({ id: u.id, role: v as never })}>
-                    <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="agent">Sales / Agent</SelectItem>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <RoleCheckboxes
+                    value={u.role as "admin" | "agent" | "buyer"}
+                    onChange={(role) => roleMut.mutate({ id: u.id, role })}
+                  />
                 </td>
                 <td className="px-3 py-2 text-right">
                   <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${u.email}?`)) delMut.mutate(u.id); }}>
@@ -861,14 +1024,10 @@ function UsersAdmin() {
             <div><Label>Password (min 8)</Label><Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} /></div>
             <div>
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as never })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="agent">Sales / Agent</SelectItem>
-                  <SelectItem value="buyer">Buyer</SelectItem>
-                </SelectContent>
-              </Select>
+              <RoleCheckboxes
+                value={form.role}
+                onChange={(role: "admin" | "agent" | "buyer") => setForm({ ...form, role })}
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -881,7 +1040,45 @@ function UsersAdmin() {
   );
 }
 
+type AppRole = "admin" | "agent" | "buyer";
+const ROLE_INFO: { id: AppRole; label: string; description: string; tone: string }[] = [
+  { id: "admin", label: "Super Admin", description: "Full access — listings, users, settings, attributes", tone: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300" },
+  { id: "agent", label: "Sales / Agent", description: "Manage listings & leads, no admin tools", tone: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300" },
+  { id: "buyer", label: "Buyer", description: "Read-only; cannot access admin panel", tone: "border-slate-500/40 bg-slate-500/10 text-slate-700 dark:text-slate-300" },
+];
+
+function RoleBadge({ role }: { role: string }) {
+  const info = ROLE_INFO.find((r) => r.id === role);
+  if (!info) return null;
+  return <span className={cn("mt-1 inline-block rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", info.tone)}>{info.label}</span>;
+}
+
+function RoleCheckboxes({ value, onChange }: { value: AppRole; onChange: (role: AppRole) => void }) {
+  return (
+    <div className="space-y-1.5">
+      {ROLE_INFO.map((r) => (
+        <label key={r.id} className={cn(
+          "flex cursor-pointer items-start gap-2 rounded-md border p-2 text-xs transition-colors",
+          value === r.id ? r.tone : "border-border/60 hover:bg-secondary/40",
+        )}>
+          <input
+            type="checkbox"
+            checked={value === r.id}
+            onChange={() => onChange(r.id)}
+            className="mt-0.5 h-4 w-4 cursor-pointer"
+          />
+          <div>
+            <div className="font-semibold">{r.label}</div>
+            <div className="text-[11px] text-muted-foreground">{r.description}</div>
+          </div>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- Site settings ---------------- */
+
 
 function SettingsAdmin() {
   const qc = useQueryClient();
