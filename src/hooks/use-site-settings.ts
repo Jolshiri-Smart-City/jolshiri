@@ -68,6 +68,9 @@ export interface ContactSettings {
   note?: string;
   map_embed_url?: string;
 }
+export interface FooterSettings {
+  copyright?: string;
+}
 
 export function useSiteSettings() {
   return useQuery({
