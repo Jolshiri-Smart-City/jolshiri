@@ -1,19 +1,23 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, Bath, Bed, Building2, Compass, Maximize2, MapPin, Phone, CalendarDays, FileImage } from "lucide-react";
+import { useSuspenseQuery, useQuery, queryOptions, useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Bath, Bed, Building2, Compass, Maximize2, MapPin, Phone, CalendarDays, FileImage, GitCompare, Check } from "lucide-react";
 import { toast } from "sonner";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getProperty, submitLead } from "@/lib/properties.functions";
+import { getProperty, similarProperties, submitLead } from "@/lib/properties.functions";
 import { formatBDT, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { EmiCalculator } from "@/components/EmiCalculator";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
+import { PropertyCard } from "@/components/PropertyCard";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { getCompareIds, toggleCompare } from "./compare";
 
 const propOptions = (id: string) =>
   queryOptions({
@@ -27,17 +31,39 @@ export const Route = createFileRoute("/properties/$id")({
     if (!p) throw notFound();
     return p;
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
-          { name: "description", content: loaderData.description?.slice(0, 160) ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.` },
-          { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
-          { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
-          { property: "og:image", content: loaderData.media[0]?.url ?? "" },
-        ]
-      : [{ title: "Property — Jolshiri" }],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData) return { meta: [{ title: "Property — Jolshiri" }] };
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: `${loaderData.project.name} · Unit ${loaderData.unit_number}`,
+      description: loaderData.description ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.`,
+      image: loaderData.media.map((m) => m.url),
+      brand: { "@type": "Brand", name: loaderData.project.developer.name },
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "BDT",
+        price: Number(loaderData.price_total),
+        availability:
+          loaderData.status === "available"
+            ? "https://schema.org/InStock"
+            : loaderData.status === "booked"
+              ? "https://schema.org/LimitedAvailability"
+              : "https://schema.org/SoldOut",
+      },
+    };
+    return {
+      meta: [
+        { title: `${loaderData.project.name} · Unit ${loaderData.unit_number} — Jolshiri` },
+        { name: "description", content: loaderData.description?.slice(0, 160) ?? `${loaderData.bedrooms} BHK ${loaderData.size_sqft} sqft in ${loaderData.project.name}.` },
+        { property: "og:title", content: `${loaderData.project.name} · Unit ${loaderData.unit_number}` },
+        { property: "og:description", content: `${loaderData.bedrooms} BHK · ${loaderData.size_sqft} sqft · ${loaderData.project.sector}` },
+        { property: "og:image", content: loaderData.media[0]?.url ?? "" },
+        { property: "og:type", content: "product" },
+      ],
+      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+    };
+  },
   component: PropertyDetailPage,
 });
 
@@ -47,9 +73,25 @@ function PropertyDetailPage() {
   const { data } = useSuspenseQuery(propOptions(id));
   const { data: settings } = useSiteSettings();
   const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [compareIds, setCompareIdsLocal] = useState<string[]>([]);
+
+  useEffect(() => {
+    const sync = () => setCompareIdsLocal(getCompareIds());
+    sync();
+    window.addEventListener("jolshiri:compare-change", sync);
+    return () => window.removeEventListener("jolshiri:compare-change", sync);
+  }, []);
+
+  const similarQ = useQuery({
+    queryKey: ["similar", id],
+    queryFn: () => similarProperties({ data: { id, sector: data!.project.sector, bedrooms: data!.bedrooms } }),
+    enabled: !!data,
+  });
 
   if (!data) return null;
   const waPhone = (settings?.brand as { whatsapp?: string } | undefined)?.whatsapp;
+  const isCompared = compareIds.includes(data.id);
 
   const photos = data.media.filter((m) => m.media_type === "photo");
   const floorPlans = data.media.filter((m) => m.media_type === "floor_plan");
@@ -84,15 +126,29 @@ function PropertyDetailPage() {
             <div className="text-xs text-muted-foreground">৳{Math.round(Number(data.price_per_sqft)).toLocaleString()} / {t("sqft")}</div>
           ) : null}
           <StatusBadge status={data.status} />
+          <Button
+            type="button"
+            variant={isCompared ? "default" : "outline"}
+            size="sm"
+            className="mt-2"
+            onClick={() => { toggleCompare(data.id); toast.success(isCompared ? "Removed from compare" : "Added to compare"); }}
+          >
+            {isCompared ? <Check className="mr-1 h-4 w-4" /> : <GitCompare className="mr-1 h-4 w-4" />}
+            {isCompared ? "In compare" : "Compare"}
+          </Button>
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div>
           {cover ? (
-            <div className="overflow-hidden rounded-xl border border-border/70 bg-muted">
-              <img src={cover.url} alt="" className="aspect-[4/3] w-full object-cover" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="block w-full overflow-hidden rounded-xl border border-border/70 bg-muted"
+            >
+              <img src={cover.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform hover:scale-[1.01]" />
+            </button>
           ) : null}
           {photos.length > 1 ? (
             <div className="mt-3 grid grid-cols-5 gap-2">
@@ -177,6 +233,25 @@ function PropertyDetailPage() {
           <LeadForm propertyId={data.id} />
         </aside>
       </div>
+
+      {(similarQ.data ?? []).length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-display text-xl font-semibold sm:text-2xl">Similar properties in {data.project.sector}</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(similarQ.data ?? []).slice(0, 3).map((p) => (
+              <PropertyCard key={p.id} row={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        index={activeImage}
+        on={{ view: ({ index }) => setActiveImage(index) }}
+        slides={photos.map((p) => ({ src: p.url }))}
+      />
       <WhatsAppFab
         phone={waPhone}
         message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
