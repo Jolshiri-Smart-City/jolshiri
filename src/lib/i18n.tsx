@@ -107,16 +107,10 @@ const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: Key) 
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-  useEffect(() => {
-    const saved = (typeof localStorage !== "undefined" && localStorage.getItem("lang")) as Lang | null;
-    if (saved === "en" || saved === "bn") setLangState(saved);
-  }, []);
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    if (typeof localStorage !== "undefined") localStorage.setItem("lang", l);
-  };
-  const t = (k: Key) => (DICT[k] as { en: string; bn: string })[lang];
+  // English-only site (Bangla translation removed).
+  const lang: Lang = "en";
+  const setLang = (_l: Lang) => {};
+  const t = (k: Key) => DICT[k].en;
   return <Ctx.Provider value={{ lang, setLang, t }}>{children}</Ctx.Provider>;
 }
 
