@@ -735,34 +735,41 @@ function FaqsManager() {
   const qc = useQueryClient();
   const { data: settings } = useSiteSettings();
   const [items, setItems] = useState<FaqItem[]>([]);
+  const [autoDisabled, setAutoDisabled] = useState(false);
 
   useEffect(() => {
-    const raw = (settings as { faqs?: FaqItem[] } | undefined)?.faqs;
-    if (Array.isArray(raw)) setItems(raw);
+    const raw = (settings as { faqs?: FaqItem[] | { items?: FaqItem[]; auto_disabled?: boolean } } | undefined)?.faqs;
+    if (Array.isArray(raw)) {
+      setItems(raw);
+    } else if (raw && typeof raw === "object") {
+      if (Array.isArray((raw as { items?: FaqItem[] }).items)) setItems((raw as { items: FaqItem[] }).items);
+      setAutoDisabled(!!(raw as { auto_disabled?: boolean }).auto_disabled);
+    }
   }, [settings]);
 
   const saveMut = useMutation({
     mutationFn: async () => {
       const { updateSiteSetting } = await import("@/lib/site-settings.functions");
       const clean = items.filter((f) => f.q.trim() && f.a.trim());
-      await updateSiteSetting({ data: { key: "faqs", value: { items: clean } as never } });
+      await updateSiteSetting({ data: { key: "faqs", value: { items: clean, auto_disabled: autoDisabled } as never } });
     },
     onSuccess: () => { toast.success("FAQs saved"); qc.invalidateQueries({ queryKey: ["site_settings"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Support both legacy array and {items: []} shape
-  useEffect(() => {
-    const raw = (settings as { faqs?: FaqItem[] | { items?: FaqItem[] } } | undefined)?.faqs;
-    if (raw && !Array.isArray(raw) && Array.isArray((raw as { items?: FaqItem[] }).items)) {
-      setItems((raw as { items: FaqItem[] }).items);
-    }
-  }, [settings]);
-
   return (
     <div className="rounded-lg border border-border/70 bg-card p-4">
       <h3 className="font-display text-lg font-semibold">FAQs</h3>
-      <p className="text-xs text-muted-foreground">Shown on every property detail page above the default FAQs.</p>
+      <p className="text-xs text-muted-foreground">Shown on every property detail page. Toggle off the auto-generated FAQs to use only your custom ones.</p>
+      <label className="mt-3 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={autoDisabled}
+          onChange={(e) => setAutoDisabled(e.target.checked)}
+          className="h-4 w-4"
+        />
+        Hide auto-generated FAQs (booking, site visit, documentation, ready status)
+      </label>
       <div className="mt-3 space-y-3">
         {items.map((f, i) => (
           <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
