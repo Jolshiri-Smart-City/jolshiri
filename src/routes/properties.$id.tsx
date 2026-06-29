@@ -1,19 +1,23 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, Bath, Bed, Building2, Compass, Maximize2, MapPin, Phone, CalendarDays, FileImage } from "lucide-react";
+import { useSuspenseQuery, useQuery, queryOptions, useMutation } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Bath, Bed, Building2, Compass, Maximize2, MapPin, Phone, CalendarDays, FileImage, GitCompare, Check } from "lucide-react";
 import { toast } from "sonner";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getProperty, submitLead } from "@/lib/properties.functions";
+import { getProperty, similarProperties, submitLead } from "@/lib/properties.functions";
 import { formatBDT, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { EmiCalculator } from "@/components/EmiCalculator";
 import { WhatsAppFab } from "@/components/WhatsAppFab";
+import { PropertyCard } from "@/components/PropertyCard";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { getCompareIds, toggleCompare } from "./compare";
 
 const propOptions = (id: string) =>
   queryOptions({
