@@ -35,7 +35,19 @@ interface AdminRow {
   status: PropertyStatus;
   possession_date: string | null;
   floor_number: number | null;
+  total_floors: number | null;
   description: string | null;
+  facing: string | null;
+  has_balcony: boolean | null;
+  booking_money: number | null;
+  is_negotiable: boolean | null;
+  is_ready_to_move: boolean | null;
+  construction_stage: string | null;
+  plot_road_number: string | null;
+  registration_type: string | null;
+  ownership_docs_available: boolean | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 function AdminPage() {
