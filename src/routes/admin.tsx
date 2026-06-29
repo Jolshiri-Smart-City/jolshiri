@@ -533,6 +533,18 @@ function ListingDialog({
             </div>
           </div>
           <div>
+            <PhotoUploader bucket="property-photos" items={photos} onChange={setPhotos} label="Photos" />
+          </div>
+          <div>
+            <SingleImageUploader
+              bucket="floor-plans"
+              value={floorPlan}
+              onChange={setFloorPlan}
+              label="Floor plan"
+              aspect="video"
+            />
+          </div>
+          <div>
             <Label>Description</Label>
             <Textarea rows={4} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} />
           </div>
