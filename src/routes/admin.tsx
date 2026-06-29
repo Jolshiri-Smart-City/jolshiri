@@ -1040,7 +1040,45 @@ function UsersAdmin() {
   );
 }
 
+type AppRole = "admin" | "agent" | "buyer";
+const ROLE_INFO: { id: AppRole; label: string; description: string; tone: string }[] = [
+  { id: "admin", label: "Super Admin", description: "Full access — listings, users, settings, attributes", tone: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300" },
+  { id: "agent", label: "Sales / Agent", description: "Manage listings & leads, no admin tools", tone: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300" },
+  { id: "buyer", label: "Buyer", description: "Read-only; cannot access admin panel", tone: "border-slate-500/40 bg-slate-500/10 text-slate-700 dark:text-slate-300" },
+];
+
+function RoleBadge({ role }: { role: string }) {
+  const info = ROLE_INFO.find((r) => r.id === role);
+  if (!info) return null;
+  return <span className={cn("mt-1 inline-block rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide", info.tone)}>{info.label}</span>;
+}
+
+function RoleCheckboxes({ value, onChange }: { value: AppRole; onChange: (role: AppRole) => void }) {
+  return (
+    <div className="space-y-1.5">
+      {ROLE_INFO.map((r) => (
+        <label key={r.id} className={cn(
+          "flex cursor-pointer items-start gap-2 rounded-md border p-2 text-xs transition-colors",
+          value === r.id ? r.tone : "border-border/60 hover:bg-secondary/40",
+        )}>
+          <input
+            type="checkbox"
+            checked={value === r.id}
+            onChange={() => onChange(r.id)}
+            className="mt-0.5 h-4 w-4 cursor-pointer"
+          />
+          <div>
+            <div className="font-semibold">{r.label}</div>
+            <div className="text-[11px] text-muted-foreground">{r.description}</div>
+          </div>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- Site settings ---------------- */
+
 
 function SettingsAdmin() {
   const qc = useQueryClient();
