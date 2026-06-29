@@ -34,36 +34,33 @@ function Index() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-br from-primary via-primary to-[oklch(0.28_0.06_200)]"
-        />
-        <div
-          className="absolute inset-0 -z-10 opacity-25"
+          className="absolute inset-0 -z-20"
           style={{
             backgroundImage:
-              "url(https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=2000&q=80)",
+              "url(https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=80)",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            mixBlendMode: "overlay",
           }}
         />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[oklch(0.22_0.05_200)]/95 via-[oklch(0.25_0.07_200)]/80 to-[oklch(0.30_0.08_200)]/60" />
         <div className="mx-auto max-w-7xl px-4 py-20 sm:py-28">
-          <div className="max-w-3xl text-primary-foreground">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur">
+          <div className="max-w-3xl text-white drop-shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
               <BadgeCheck className="h-3.5 w-3.5" /> Purbachal · 48,000+ flats coming online
             </span>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
+            <h1 className="mt-4 font-display text-4xl font-bold leading-tight drop-shadow-lg sm:text-5xl md:text-6xl">
               {t("tagline")}
             </h1>
-            <p className="mt-4 max-w-xl text-base text-primary-foreground/85 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base text-white/95 drop-shadow sm:text-lg">
               {t("heroSub")}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button asChild size="lg" className="bg-accent text-accent-foreground shadow-lg hover:bg-accent/90">
                 <Link to="/properties">
                   {t("browse")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/10 text-primary-foreground hover:bg-white/20">
+              <Button asChild size="lg" variant="outline" className="border-white/50 bg-white/15 text-white backdrop-blur hover:bg-white/25">
                 <Link to="/properties" search={{ bedrooms: 3 } as never}>
                   3-bedroom flats
                 </Link>
@@ -72,6 +69,7 @@ function Index() {
           </div>
         </div>
       </section>
+
 
       {/* Why us */}
       <section className="mx-auto max-w-7xl px-4 py-16">
