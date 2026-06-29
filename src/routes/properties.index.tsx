@@ -74,7 +74,7 @@ export const Route = createFileRoute("/properties/")({
 
 function PropertiesPage() {
   const { t, lang } = useI18n();
-  const navigate = useNavigate({ from: "/properties" });
+  const navigate = useNavigate({ from: "/properties/" });
   const search = Route.useSearch();
 
   const sectorsQ = useQuery({ queryKey: ["sectors"], queryFn: () => listSectors() });
