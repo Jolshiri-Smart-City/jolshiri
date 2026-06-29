@@ -392,6 +392,13 @@ export type Database = {
             referencedRelation: "developers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "developers_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       properties: {
@@ -641,6 +648,21 @@ export type Database = {
       }
     }
     Views: {
+      developers_public: {
+        Row: {
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       property_listing_view: {
         Row: {
           bathrooms: number | null
