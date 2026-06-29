@@ -73,7 +73,7 @@ function ContactPage() {
         <Button size="lg" onClick={() => setOpen(true)}>Send us a message</Button>
       </div>
 
-      <LeadDialog open={open} onOpenChange={setOpen} propertyId={null} propertyLabel="General inquiry" />
+      <LeadDialog open={open} onOpenChange={setOpen} propertyLabel="General inquiry" />
     </div>
   );
 }
