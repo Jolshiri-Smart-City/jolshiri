@@ -27,6 +27,8 @@ export function useSiteSettings() {
       return {
         hero: (map.hero ?? null) as HeroSettings | null,
         brand: (map.brand ?? null) as BrandSettings | null,
+        faqs: (map.faqs ?? null) as { items?: Array<{ q: string; a: string }> } | Array<{ q: string; a: string }> | null,
+        testimonials: (map.testimonials ?? null) as unknown,
       };
     },
   });
