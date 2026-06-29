@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import jolshiriLogo from "@/assets/jolshiri-logo.png";
 
 export function Header() {
   const { t, lang, setLang } = useI18n();
@@ -19,7 +20,7 @@ export function Header() {
   const brandName = settings?.brand
     ? (lang === "bn" ? settings.brand.name_bn : settings.brand.name_en)
     : t("brand");
-  const logoUrl = settings?.brand?.logo_url;
+  const logoUrl = settings?.brand?.logo_url || jolshiriLogo;
 
   const nav = [
     { to: "/", label: brandName, exact: true, hideLabel: true },
@@ -30,11 +31,8 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold text-primary">
-          {logoUrl ? (
-            <img src={logoUrl} alt={brandName} className="h-8 w-8 rounded-md object-cover" />
-          ) : (
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-foreground">J</span>
-          )}
+          <img src={logoUrl} alt={brandName} className="h-9 w-9 rounded-md object-contain" />
+
           <span className="hidden sm:inline">{brandName}</span>
         </Link>
 

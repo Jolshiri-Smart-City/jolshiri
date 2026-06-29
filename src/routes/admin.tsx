@@ -18,6 +18,7 @@ import { useI18n, formatBDT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { PropertyStatus } from "@/lib/types";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { SingleImageUploader, PhotoUploader, type MediaItem } from "@/components/ImageUploader";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin · Jolshiri" }] }),
@@ -324,6 +325,8 @@ function ListingDialog({
   const isEdit = !!row;
   const [form, setForm] = useState<Partial<AdminRow>>({});
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<Set<string>>(new Set());
+  const [photos, setPhotos] = useState<MediaItem[]>([]);
+  const [floorPlan, setFloorPlan] = useState<string>("");
   const amenitiesQ = useAmenities();
 
   useEffect(() => {
@@ -336,8 +339,20 @@ function ListingDialog({
         .then(({ data }) => {
           setSelectedAmenityIds(new Set((data ?? []).map((r: { amenity_id: string }) => r.amenity_id)));
         });
+      supabase
+        .from("property_media")
+        .select("id, url, media_type, display_order")
+        .eq("property_id", row.id)
+        .order("display_order")
+        .then(({ data }) => {
+          const all = (data ?? []) as MediaItem[];
+          setPhotos(all.filter((m) => m.media_type === "photo"));
+          setFloorPlan(all.find((m) => m.media_type === "floor_plan")?.url ?? "");
+        });
     } else {
       setSelectedAmenityIds(new Set());
+      setPhotos([]);
+      setFloorPlan("");
     }
   }, [row, open]);
 
@@ -380,12 +395,22 @@ function ListingDialog({
       }
       if (propertyId) {
         await supabase.from("property_amenities").delete().eq("property_id", propertyId);
-        const rows = Array.from(selectedAmenityIds).map((amenity_id) => ({ property_id: propertyId!, amenity_id }));
-        if (rows.length > 0) {
-          const { error } = await supabase.from("property_amenities").insert(rows);
+        const amenityRows = Array.from(selectedAmenityIds).map((amenity_id) => ({ property_id: propertyId!, amenity_id }));
+        if (amenityRows.length > 0) {
+          const { error } = await supabase.from("property_amenities").insert(amenityRows);
+          if (error) throw error;
+        }
+        // Sync media: wipe and re-insert (simple, predictable)
+        await supabase.from("property_media").delete().eq("property_id", propertyId);
+        const mediaRows: Array<{ property_id: string; url: string; media_type: "photo" | "floor_plan"; display_order: number }> = [];
+        photos.forEach((p, i) => mediaRows.push({ property_id: propertyId!, url: p.url, media_type: "photo", display_order: i }));
+        if (floorPlan) mediaRows.push({ property_id: propertyId!, url: floorPlan, media_type: "floor_plan", display_order: 0 });
+        if (mediaRows.length > 0) {
+          const { error } = await supabase.from("property_media").insert(mediaRows);
           if (error) throw error;
         }
       }
+
     },
     onSuccess: () => {
       toast.success(isEdit ? "Saved" : "Created");
@@ -506,6 +531,18 @@ function ListingDialog({
                 <span className="text-muted-foreground">No amenities yet — add them in the Attributes tab.</span>
               )}
             </div>
+          </div>
+          <div>
+            <PhotoUploader bucket="property-photos" items={photos} onChange={setPhotos} label="Photos" />
+          </div>
+          <div>
+            <SingleImageUploader
+              bucket="floor-plans"
+              value={floorPlan}
+              onChange={setFloorPlan}
+              label="Floor plan"
+              aspect="video"
+            />
           </div>
           <div>
             <Label>Description</Label>
@@ -846,12 +883,11 @@ function SettingsAdmin() {
     title_en: "", title_bn: "", subtitle_en: "", subtitle_bn: "",
     image_url: "", badge_en: "", badge_bn: "",
   });
-  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "" });
+  const [brand, setBrand] = useState({ name_en: "", name_bn: "", logo_url: "", whatsapp: "" });
 
   useEffect(() => {
-    if (settings?.hero) setHero({ ...hero, ...settings.hero });
-    if (settings?.brand) setBrand({ ...brand, ...settings.brand });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (settings?.hero) setHero((h) => ({ ...h, ...settings.hero }));
+    if (settings?.brand) setBrand((b) => ({ ...b, ...(settings.brand as typeof b) }));
   }, [settings]);
 
   const saveMut = useMutation({
@@ -876,10 +912,20 @@ function SettingsAdmin() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div><Label>Brand name (English)</Label><Input value={brand.name_en} onChange={(e) => setBrand({ ...brand, name_en: e.target.value })} /></div>
           <div><Label>Brand name (Bangla)</Label><Input value={brand.name_bn} onChange={(e) => setBrand({ ...brand, name_bn: e.target.value })} /></div>
+          <div>
+            <Label>WhatsApp number (with country code)</Label>
+            <Input placeholder="+8801XXXXXXXXX" value={brand.whatsapp} onChange={(e) => setBrand({ ...brand, whatsapp: e.target.value })} />
+            <p className="mt-1 text-xs text-muted-foreground">Shown as the floating WhatsApp button on listing pages.</p>
+          </div>
           <div className="sm:col-span-2">
-            <Label>Logo image URL</Label>
-            <Input value={brand.logo_url} onChange={(e) => setBrand({ ...brand, logo_url: e.target.value })} placeholder="https://..." />
-            {brand.logo_url && <img src={brand.logo_url} alt="logo preview" className="mt-2 h-12 w-12 rounded-md object-cover border" />}
+            <SingleImageUploader
+              bucket="branding"
+              value={brand.logo_url}
+              onChange={(url) => setBrand({ ...brand, logo_url: url })}
+              label="Logo"
+              aspect="square"
+              prefix="logo-"
+            />
           </div>
         </div>
       </div>
@@ -888,9 +934,14 @@ function SettingsAdmin() {
         <h3 className="font-display text-lg font-semibold">Hero section</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <Label>Background image URL</Label>
-            <Input value={hero.image_url} onChange={(e) => setHero({ ...hero, image_url: e.target.value })} placeholder="https://..." />
-            {hero.image_url && <img src={hero.image_url} alt="hero preview" className="mt-2 h-32 w-full rounded-md object-cover border" />}
+            <SingleImageUploader
+              bucket="branding"
+              value={hero.image_url}
+              onChange={(url) => setHero({ ...hero, image_url: url })}
+              label="Background image"
+              aspect="video"
+              prefix="hero-"
+            />
           </div>
           <div><Label>Title (English)</Label><Textarea rows={2} value={hero.title_en} onChange={(e) => setHero({ ...hero, title_en: e.target.value })} /></div>
           <div><Label>Title (Bangla)</Label><Textarea rows={2} value={hero.title_bn} onChange={(e) => setHero({ ...hero, title_bn: e.target.value })} /></div>

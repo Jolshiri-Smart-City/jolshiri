@@ -11,6 +11,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getProperty, submitLead } from "@/lib/properties.functions";
 import { formatBDT, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { EmiCalculator } from "@/components/EmiCalculator";
+import { WhatsAppFab } from "@/components/WhatsAppFab";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 
 const propOptions = (id: string) =>
   queryOptions({
@@ -42,9 +45,11 @@ function PropertyDetailPage() {
   const { id } = Route.useParams();
   const { t, lang } = useI18n();
   const { data } = useSuspenseQuery(propOptions(id));
+  const { data: settings } = useSiteSettings();
   const [activeImage, setActiveImage] = useState(0);
 
   if (!data) return null;
+  const waPhone = (settings?.brand as { whatsapp?: string } | undefined)?.whatsapp;
 
   const photos = data.media.filter((m) => m.media_type === "photo");
   const floorPlans = data.media.filter((m) => m.media_type === "floor_plan");
@@ -163,12 +168,19 @@ function PropertyDetailPage() {
               </TabsContent>
             ) : null}
           </Tabs>
+          <div className="mt-6">
+            <EmiCalculator price={Number(data.price_total)} />
+          </div>
         </div>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <LeadForm propertyId={data.id} />
         </aside>
       </div>
+      <WhatsAppFab
+        phone={waPhone}
+        message={`Hi, I'm interested in ${data.project.name} unit ${data.unit_number}. ${typeof window !== "undefined" ? window.location.href : ""}`}
+      />
     </div>
   );
 }
