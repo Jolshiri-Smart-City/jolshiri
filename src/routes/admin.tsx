@@ -1024,14 +1024,10 @@ function UsersAdmin() {
             <div><Label>Password (min 8)</Label><Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} /></div>
             <div>
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as never })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="agent">Sales / Agent</SelectItem>
-                  <SelectItem value="buyer">Buyer</SelectItem>
-                </SelectContent>
-              </Select>
+              <RoleCheckboxes
+                value={form.role}
+                onChange={(role: "admin" | "agent" | "buyer") => setForm({ ...form, role })}
+              />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
