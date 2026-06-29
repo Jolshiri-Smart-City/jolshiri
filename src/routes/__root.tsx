@@ -69,6 +69,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#0e7a6b" },
       { title: "Jolshiri Smart City — Property Search" },
       { name: "description", content: "Search and compare flats across Jolshiri Smart City, Purbachal. Verified inventory, transparent pricing, real-time status." },
       { property: "og:title", content: "Jolshiri Smart City — Property Search" },
