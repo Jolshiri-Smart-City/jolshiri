@@ -149,6 +149,24 @@ export const featuredProperties = createServerFn({ method: "GET" }).handler(asyn
   return (data ?? []) as ListingRow[];
 });
 
+export const similarProperties = createServerFn({ method: "POST" })
+  .inputValidator((input: { id: string; sector: string; bedrooms: number }) =>
+    z.object({ id: z.string().uuid(), sector: z.string(), bedrooms: z.number() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { getPublicSupabase } = await import("./supabase-server");
+    const supabase = getPublicSupabase();
+    const { data: rows } = await supabase
+      .from("property_listing_view")
+      .select("*")
+      .eq("sector", data.sector)
+      .eq("status", "available")
+      .neq("id", data.id)
+      .order("bedrooms", { ascending: true })
+      .limit(6);
+    return (rows ?? []) as ListingRow[];
+  });
+
 export const submitLead = createServerFn({ method: "POST" })
   .inputValidator((input: {
     propertyId?: string;
