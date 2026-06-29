@@ -4,10 +4,12 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Footer } from "@/components/Footer";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -111,6 +113,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = pathname.startsWith("/admin");
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
@@ -119,9 +123,7 @@ function RootComponent() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Jolshiri Smart City · Purbachal, Dhaka
-          </footer>
+          {!isAdmin && <Footer />}
         </div>
         <Toaster richColors position="top-right" />
       </I18nProvider>
