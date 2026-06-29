@@ -1190,6 +1190,22 @@ function SettingsAdmin() {
       </div>
 
       <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Footer</h3>
+        <p className="text-xs text-muted-foreground">
+          Bottom copyright line. Use <code>{"{year}"}</code> and <code>{"{brand}"}</code> as placeholders.
+        </p>
+        <div className="mt-3">
+          <Label>Copyright text</Label>
+          <Input
+            placeholder="© {year} {brand} · Purbachal, Dhaka"
+            value={footer.copyright}
+            onChange={(e) => setFooter({ ...footer, copyright: e.target.value })}
+          />
+        </div>
+      </div>
+
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
         <h3 className="font-display text-lg font-semibold">Hero section</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
