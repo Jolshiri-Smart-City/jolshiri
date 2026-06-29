@@ -85,6 +85,8 @@ function AdminPage() {
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           {isAdmin && <TabsTrigger value="activity">Activity</TabsTrigger>}
           {isAdmin && <TabsTrigger value="settings">Site settings</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="about">About page</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="contact">Contact page</TabsTrigger>}
         </TabsList>
         {isAdmin && <TabsContent value="dashboard"><DashboardStats /></TabsContent>}
         <TabsContent value="leads"><LeadKanban /></TabsContent>
@@ -93,6 +95,8 @@ function AdminPage() {
         {isAdmin && <TabsContent value="users"><UsersAdmin /></TabsContent>}
         {isAdmin && <TabsContent value="activity"><AuditLogViewer /></TabsContent>}
         {isAdmin && <TabsContent value="settings"><SettingsAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="about"><AboutAdmin /></TabsContent>}
+        {isAdmin && <TabsContent value="contact"><ContactAdmin /></TabsContent>}
       </Tabs>
     </div>
   );
@@ -1278,4 +1282,144 @@ function SettingsAdmin() {
   );
 }
 
+function AboutAdmin() {
+  const qc = useQueryClient();
+  const { data: settings, isLoading } = useSiteSettings();
+  const [about, setAbout] = useState<{ heading: string; intro: string; cta_title: string; cta_body: string; cards: Array<{ title: string; body: string }> }>({
+    heading: "About Us",
+    intro: "",
+    cta_title: "",
+    cta_body: "",
+    cards: [],
+  });
+
+  useEffect(() => {
+    if (settings?.about) {
+      setAbout((a) => ({
+        heading: settings.about?.heading ?? a.heading,
+        intro: settings.about?.intro ?? a.intro,
+        cta_title: settings.about?.cta_title ?? a.cta_title,
+        cta_body: settings.about?.cta_body ?? a.cta_body,
+        cards: settings.about?.cards ?? [],
+      }));
+    }
+  }, [settings]);
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const { updateSiteSetting } = await import("@/lib/site-settings.functions");
+      await updateSiteSetting({ data: { key: "about", value: about } });
+    },
+    onSuccess: () => {
+      toast.success("About page saved");
+      qc.invalidateQueries({ queryKey: ["site_settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <Skeleton className="mt-4 h-72 w-full" />;
+
+  return (
+    <div className="mt-4 space-y-6">
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">About page content</h3>
+        <p className="text-xs text-muted-foreground">Shown on the public /about page.</p>
+        <div className="mt-3 grid gap-3">
+          <div><Label>Heading</Label><Input value={about.heading} onChange={(e) => setAbout({ ...about, heading: e.target.value })} /></div>
+          <div><Label>Intro paragraph</Label><Textarea rows={5} value={about.intro} onChange={(e) => setAbout({ ...about, intro: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Feature cards</h3>
+        <p className="text-xs text-muted-foreground">Three-up grid below the intro.</p>
+        <div className="mt-3 space-y-3">
+          {about.cards.map((c, i) => (
+            <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Card #{i + 1}</span>
+                <Button variant="ghost" size="icon" onClick={() => setAbout({ ...about, cards: about.cards.filter((_, idx) => idx !== i) })}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              <Input placeholder="Title" value={c.title} onChange={(e) => setAbout({ ...about, cards: about.cards.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x) })} />
+              <Textarea rows={2} placeholder="Body" value={c.body} onChange={(e) => setAbout({ ...about, cards: about.cards.map((x, idx) => idx === i ? { ...x, body: e.target.value } : x) })} />
+            </div>
+          ))}
+        </div>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => setAbout({ ...about, cards: [...about.cards, { title: "", body: "" }] })}>
+            <Plus className="mr-1 h-4 w-4" />Add card
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">CTA box</h3>
+        <div className="mt-3 grid gap-3">
+          <div><Label>CTA title</Label><Input value={about.cta_title} onChange={(e) => setAbout({ ...about, cta_title: e.target.value })} /></div>
+          <div><Label>CTA body</Label><Textarea rows={3} value={about.cta_body} onChange={(e) => setAbout({ ...about, cta_body: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div className="sticky bottom-4 flex justify-end">
+        <Button size="lg" onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="shadow-lg">
+          {saveMut.isPending ? "Saving…" : "Save About page"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ContactAdmin() {
+  const qc = useQueryClient();
+  const { data: settings, isLoading } = useSiteSettings();
+  const [contact, setContact] = useState({
+    heading: "Contact Us",
+    subtitle: "",
+    note: "",
+    map_embed_url: "",
+  });
+
+  useEffect(() => {
+    if (settings?.contact) setContact((c) => ({ ...c, ...settings.contact }));
+  }, [settings]);
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const { updateSiteSetting } = await import("@/lib/site-settings.functions");
+      await updateSiteSetting({ data: { key: "contact", value: contact } });
+    },
+    onSuccess: () => {
+      toast.success("Contact page saved");
+      qc.invalidateQueries({ queryKey: ["site_settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <Skeleton className="mt-4 h-72 w-full" />;
+
+  return (
+    <div className="mt-4 space-y-6">
+      <div className="rounded-lg border border-border/70 bg-card p-4">
+        <h3 className="font-display text-lg font-semibold">Contact page content</h3>
+        <p className="text-xs text-muted-foreground">
+          Shown on the public /contact page. Phone, email, WhatsApp and address come from <strong>Site settings → Contact &amp; social</strong>.
+        </p>
+        <div className="mt-3 grid gap-3">
+          <div><Label>Heading</Label><Input value={contact.heading} onChange={(e) => setContact({ ...contact, heading: e.target.value })} /></div>
+          <div><Label>Subtitle</Label><Input value={contact.subtitle} onChange={(e) => setContact({ ...contact, subtitle: e.target.value })} placeholder="We typically respond within 1 business hour." /></div>
+          <div><Label>Additional note</Label><Textarea rows={4} value={contact.note} onChange={(e) => setContact({ ...contact, note: e.target.value })} placeholder="Office hours, directions, NRB support hours, etc." /></div>
+          <div><Label>Google Maps embed URL (optional)</Label><Input value={contact.map_embed_url} onChange={(e) => setContact({ ...contact, map_embed_url: e.target.value })} placeholder="https://www.google.com/maps/embed?pb=..." /></div>
+        </div>
+      </div>
+
+      <div className="sticky bottom-4 flex justify-end">
+        <Button size="lg" onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="shadow-lg">
+          {saveMut.isPending ? "Saving…" : "Save Contact page"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 

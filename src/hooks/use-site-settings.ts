@@ -54,6 +54,21 @@ export interface SeoSettings {
   body_html?: string;
 }
 
+export interface AboutCard { title: string; body: string }
+export interface AboutSettings {
+  heading?: string;
+  intro?: string;
+  cards?: AboutCard[];
+  cta_title?: string;
+  cta_body?: string;
+}
+export interface ContactSettings {
+  heading?: string;
+  subtitle?: string;
+  note?: string;
+  map_embed_url?: string;
+}
+
 export function useSiteSettings() {
   return useQuery({
     queryKey: ["site_settings"],
@@ -69,6 +84,8 @@ export function useSiteSettings() {
         faqs: (map.faqs ?? null) as { items?: Array<{ q: string; a: string }> } | Array<{ q: string; a: string }> | null,
         testimonials: (map.testimonials ?? null) as TestimonialItem[] | { items?: TestimonialItem[] } | null,
         seo: (map.seo ?? null) as SeoSettings | null,
+        about: (map.about ?? null) as AboutSettings | null,
+        contact: (map.contact ?? null) as ContactSettings | null,
       };
     },
   });
