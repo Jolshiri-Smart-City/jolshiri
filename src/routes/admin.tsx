@@ -1139,6 +1139,7 @@ function SettingsAdmin() {
       setTestimonials((tRaw as { items: typeof testimonials }).items);
     }
     if (settings?.seo) setSeo((s) => ({ ...s, ...settings.seo }));
+    if (settings?.footer) setFooter((f) => ({ ...f, ...settings.footer }));
   }, [settings]);
 
   const saveMut = useMutation({
