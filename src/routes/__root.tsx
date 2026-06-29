@@ -116,9 +116,7 @@ function RootComponent() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <footer>
-            <Footer />
-          </footer>
+          <Footer />
         </div>
         <Toaster richColors position="top-right" />
       </I18nProvider>
